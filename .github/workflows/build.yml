@@ -3,6 +3,8 @@ name: Build and Publish EXE
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "main" ]
 
@@ -32,13 +34,14 @@ jobs:
         name: BatteryGuardian-x64-Release
         path: PublishOutput
 
-  # NEW JOB: Automatically creates a release draft
   release:
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: github.ref == 'refs/heads/main' # Only run when pushing to main
+    # This job will ONLY run when you push a Git tag (e.g., v1.0.0)
+    if: startsWith(github.ref, 'refs/tags/')
+    
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
@@ -46,7 +49,7 @@ jobs:
           name: BatteryGuardian-x64-Release
           path: ./artifact
           
-      - name: Zip the folder (to avoid nested folders)
+      - name: Zip the folder
         run: |
           cd artifact
           zip -r ../BatteryGuardian-x64-Release.zip .
@@ -54,8 +57,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }} # Automatically creates tags: v1, v2, v3...
-          name: Battery Guardian v${{ github.run_number }}
+          tag_name: ${{ github.ref_name }}
+          name: Battery Guardian ${{ github.ref_name }}
           files: BatteryGuardian-x64-Release.zip
           draft: false
           prerelease: false
