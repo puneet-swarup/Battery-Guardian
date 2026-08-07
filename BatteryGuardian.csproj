@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>BatteryGuardian</RootNamespace>
+		<AssemblyName>BatteryGuardian</AssemblyName>
+		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+		<Platforms>AnyCPU</Platforms>
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="System.Speech" Version="10.0.10" />
+	</ItemGroup>
+
+</Project>

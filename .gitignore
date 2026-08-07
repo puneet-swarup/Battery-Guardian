@@ -1,0 +1,32 @@
+# Windows OS generated files
+Thumbs.db
+Desktop.ini
+
+# Visual Studio / Project Files
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.tmp
+*.log
+*.pidb
+*.psess
+*.vsp
+*.crashreport
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# NuGet Packages
+packages/
+*.nupkg
+
+# Installer output (Excluding the Installer project entirely)
+BatteryGuardianInstaller/
+PublishOutput/
+
+# User settings (So each user gets their own default settings on first run)
+Settings.json
