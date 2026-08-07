@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # This job will ONLY run when you push a Git tag (e.g., v1.0.0)
+    # Only runs when a tag is pushed (e.g., v1.0.0)
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
