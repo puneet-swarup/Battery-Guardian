@@ -3,7 +3,7 @@
 
 A lightweight, open-source WPF application for Windows that helps extend your laptop battery lifespan by notifying you when it's time to unplug or plug in your charger.
 
-Lithium-ion batteries degrade fastest when kept at 100% charge for extended periods, or when drained below 15%. Battery Guardian sits quietly in your system tray, alerts you via voice, custom sound, and uses an eye-catching popup and blinking tray icon to make sure you never miss a warning.
+Lithium-ion batteries degrade fastest when kept at 100% charge for extended periods, or when drained below 15%. Battery Guardian sits quietly in your system tray and alerts you via voice, beep, and toast notifications so you never forget to manage your battery health.
 
 ---
 
@@ -13,15 +13,12 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 - **Automatic Refresh**: Updates the status every 30 seconds.
 - **Manual Refresh**: Click the "Refresh Now" button for instant updates.
 - **Smart Alerts**:
-  - **High Charge Alert**: When charging and reaching 95% (configurable), it triggers an alert.
-  - **Low Charge Alert**: When discharging and dropping to 15% (configurable), it triggers an alert.
-- **Voice Notifications**: Uses Windows built-in Text-to-Speech to clearly speak *"Please disconnect the charger"* or *"Please connect the charger"*.
-- **Custom Alert Sounds**: Pick your own `.wav` (or MP3) file for High and Low alerts via the Settings window. Defaults to the system beep.
-- **Custom Visual Popup**: A modern, colored toast notification slides up from the bottom-right corner of your screen.
-- **Blinking Tray Icon**: When an alert fires, the system tray battery icon blinks for 10 seconds to grab your attention.
-- **Dynamic System Tray Icon**: The tray icon dynamically updates to show your battery level (Green for high, Orange for medium, Red for low).
+  - **High Charge Alert**: When charging and reaching 95% (configurable), it plays a beep, shows a notification, and speaks *"Please disconnect the charger."*
+  - **Low Charge Alert**: When discharging and dropping to 15% (configurable), it plays a beep, shows a notification, and speaks *"Please connect the charger."*
+- **Voice Notifications**: Uses Windows built-in Text-to-Speech for clear audio alerts.
+- **Dynamic System Tray Icon**: The tray icon visually updates to show your battery level (Green for high, Orange for medium, Red for low).
 - **Fully Configurable**: Customize the High and Low threshold percentages via the Settings window.
-- **Auto-Start**: Automatically registers itself to launch when you log into Windows (on first run).
+- **Auto-Start**: Registers itself to launch automatically when you sign into Windows (on first run).
 
 ---
 
@@ -60,20 +57,7 @@ Since this repository does not include an installer, you need to compile the app
 
 *Low Threshold* (default: 15%)
 
-*High Alert Sound* (Select a custom .wav/.mp3 file, or leave it as <Default> for the classic system beep).
-
-*Low Alert Sound* (Select a custom .wav/.mp3 file, or leave it as <Default>).
-
----
-
-## 🚀 Auto-Start (Automatic Registration)
-The first time you run the application after building it, it will automatically register itself in your Windows Registry (*HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run*).
-
-This means it will launch silently in your system tray every single time you log into Windows, without you needing to manually drag shortcuts anywhere.
-
-```quote
-If you want to disable auto-start later: You can simply open Windows Task Manager, go to the Startup tab, find BatteryGuardian, and disable it. Alternatively, you can delete the BatteryGuardian entry from the registry key mentioned above.
-```
+**Auto-Start with Windows**: The first time you run the app, it will automatically add a registry entry to launch itself every time you log into Windows. To remove it from auto-start, simply open Task Manager > Startup tab, disable "BatteryGuardian", or delete the entry from *HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run*.
 
 ---
 

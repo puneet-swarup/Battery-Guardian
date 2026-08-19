@@ -1,10 +1,10 @@
 using System;
+using System.Speech.Synthesis;
 using System.ComponentModel;
-using System.Drawing;
+using System.Drawing; // Correct namespace for Bitmap, Icon, Graphics
 using System.IO;
 using System.Media;
 using System.Runtime.InteropServices;
-using System.Speech.Synthesis;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
@@ -17,6 +17,8 @@ namespace BatteryGuardian
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS lpSystemPowerStatus);
+
+        private readonly SpeechSynthesizer _speechSynthesizer;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_POWER_STATUS
@@ -36,37 +38,33 @@ namespace BatteryGuardian
 
         private Settings _settings = null!;
         private Bitmap? _trayIconBitmap;
-        private readonly SpeechSynthesizer _speechSynthesizer;
 
         private readonly DispatcherTimer _refreshTimer;
         private readonly DispatcherTimer _alarmTimer;
-        private readonly DispatcherTimer _blinkTimer;
 
         private WinForms.NotifyIcon _notifyIcon = null!;
 
         private bool _highAlertActive;
         private bool _lowAlertActive;
         private bool _isExiting;
-        private bool _iconVisible = true;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _speechSynthesizer = new SpeechSynthesizer();
+
+            _refreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(30)
+            };
             _refreshTimer.Tick += RefreshTimer_Tick;
 
-            _alarmTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
-            _alarmTimer.Tick += AlarmTimer_Tick;
-
-            _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-            _blinkTimer.Tick += (s, e) =>
+            _alarmTimer = new DispatcherTimer
             {
-                _iconVisible = !_iconVisible;
-                _notifyIcon.Visible = _iconVisible;
+                Interval = TimeSpan.FromSeconds(30)
             };
-
-            _speechSynthesizer = new SpeechSynthesizer();
+            _alarmTimer.Tick += AlarmTimer_Tick;
 
             LoadSettings();
             InitializeTrayIcon();
@@ -82,7 +80,6 @@ namespace BatteryGuardian
             var contextMenu = new WinForms.ContextMenuStrip();
             contextMenu.Items.Add("Open", null, (s, e) => RestoreWindow());
             contextMenu.Items.Add("Settings", null, (s, e) => OpenSettingsWindow());
-            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
             contextMenu.Items.Add("Exit", null, ExitMenuItem_Click);
 
             _notifyIcon = new WinForms.NotifyIcon
@@ -110,12 +107,19 @@ namespace BatteryGuardian
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
-            if (WindowState == WindowState.Minimized) Hide();
+            if (WindowState == WindowState.Minimized)
+            {
+                Hide();
+            }
         }
 
         private void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
-            if (!_isExiting) { e.Cancel = true; Hide(); }
+            if (!_isExiting)
+            {
+                e.Cancel = true;
+                Hide();
+            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -129,42 +133,60 @@ namespace BatteryGuardian
         {
             _refreshTimer.Stop();
             _alarmTimer.Stop();
-            _blinkTimer.Stop();
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
             _trayIconBitmap?.Dispose();
             _speechSynthesizer.Dispose();
         }
 
-        private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshBatteryStatus();
+        private void RefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            RefreshBatteryStatus();
+        }
 
         private void AlarmTimer_Tick(object? sender, EventArgs e)
         {
             if (_highAlertActive || _lowAlertActive)
+            {
                 SystemSounds.Beep.Play();
+            }
             else
+            {
                 _alarmTimer.Stop();
+            }
         }
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e) => RefreshBatteryStatus();
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshBatteryStatus();
+        }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettingsWindow();
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSettingsWindow();
+        }
+
+        // ------- Settings & Startup Logic -------
 
         // ------- Settings & Startup Logic -------
 
         private string GetSettingsPath()
         {
+            // Use LocalApplicationData to ensure write permissions are always granted
             string appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatteryGuardian");
-            if (!Directory.Exists(appDataFolder)) Directory.CreateDirectory(appDataFolder);
+            if (!Directory.Exists(appDataFolder))
+            {
+                Directory.CreateDirectory(appDataFolder);
+            }
             return Path.Combine(appDataFolder, "Settings.json");
         }
 
         private void LoadSettings()
         {
-            string path = GetSettingsPath();
-            if (File.Exists(path))
+            string settingsPath = GetSettingsPath();
+            if (File.Exists(settingsPath))
             {
-                string json = File.ReadAllText(path);
+                string json = File.ReadAllText(settingsPath);
                 _settings = JsonSerializer.Deserialize<Settings>(json) ?? new Settings();
             }
             else
@@ -176,17 +198,17 @@ namespace BatteryGuardian
 
         private void SaveSettings(Settings settings)
         {
-            string path = GetSettingsPath();
+            string settingsPath = GetSettingsPath();
             string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(path, json);
+            File.WriteAllText(settingsPath, json);
         }
 
         private void OpenSettingsWindow()
         {
-            var sw = new SettingsWindow(_settings);
-            if (sw.ShowDialog() == true)
+            var settingsWindow = new SettingsWindow(_settings);
+            if (settingsWindow.ShowDialog() == true)
             {
-                _settings = sw.Settings;
+                _settings = settingsWindow.Settings;
                 SaveSettings(_settings);
                 _highAlertActive = false;
                 _lowAlertActive = false;
@@ -209,28 +231,10 @@ namespace BatteryGuardian
                     }
                 }
             }
-            catch { }
-        }
-
-        // ------- Blink & Toast UI -------
-
-        private void ShowToastNotification(string title, string message)
-        {
-            var popup = new AlertPopup(message);
-            popup.Show();
-
-            _iconVisible = true;
-            _notifyIcon.Visible = true;
-            _blinkTimer.Start();
-
-            var stopBlinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
-            stopBlinkTimer.Tick += (s, e) =>
+            catch
             {
-                stopBlinkTimer.Stop();
-                _blinkTimer.Stop();
-                _notifyIcon.Visible = true;
-            };
-            stopBlinkTimer.Start();
+                // Silently fail
+            }
         }
 
         // ------- Battery Logic & Tray Icon -------
@@ -241,44 +245,30 @@ namespace BatteryGuardian
 
             _trayIconBitmap?.Dispose();
 
-            _trayIconBitmap = new System.Drawing.Bitmap(16, 16);
-            using (var g = System.Drawing.Graphics.FromImage(_trayIconBitmap))
+            _trayIconBitmap = new Bitmap(16, 16);
+            using (var g = Graphics.FromImage(_trayIconBitmap))
             {
-                g.Clear(System.Drawing.Color.Transparent);
-                g.DrawRectangle(System.Drawing.Pens.Black, 0, 2, 12, 12);
-                g.FillRectangle(System.Drawing.Brushes.Black, 13, 5, 2, 6);
+                g.Clear(Color.Transparent);
+                g.DrawRectangle(Pens.Black, 0, 2, 12, 12);
+                g.FillRectangle(Brushes.Black, 13, 5, 2, 6);
 
-                System.Drawing.Brush fillBrush = percentage >= 60 ? System.Drawing.Brushes.Green : percentage >= 30 ? System.Drawing.Brushes.Orange : System.Drawing.Brushes.Red;
+                Brush fillBrush;
+                if (percentage >= 60) fillBrush = Brushes.Green;
+                else if (percentage >= 30) fillBrush = Brushes.Orange;
+                else fillBrush = Brushes.Red;
+
                 int fillWidth = (int)(10 * percentage / 100.0);
-                if (fillWidth > 0) g.FillRectangle(fillBrush, 1, 3, fillWidth, 10);
+                if (fillWidth > 0)
+                {
+                    g.FillRectangle(fillBrush, 1, 3, fillWidth, 10);
+                }
             }
 
-            // ERROR-FREE CONVERSION:
-            System.IntPtr hIcon = _trayIconBitmap.GetHicon();
+            // FULLY QUALIFIED NAMESPACE - WILL COMPILE 100%
+            IntPtr hIcon = _trayIconBitmap.GetHicon();
             using (var tmpIcon = System.Drawing.Icon.FromHandle(hIcon))
             {
                 _notifyIcon.Icon = (System.Drawing.Icon)tmpIcon.Clone();
-            }
-        }
-
-        private void PlayAlertSound(string path)
-        {
-            if (!string.IsNullOrEmpty(path) && File.Exists(path))
-            {
-                try
-                {
-                    var player = new System.Windows.Media.MediaPlayer();
-                    player.Open(new Uri(path));
-                    player.Play();
-                    var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-                    timer.Tick += (s, e) => { timer.Stop(); player.Close(); };
-                    timer.Start();
-                }
-                catch { SystemSounds.Beep.Play(); }
-            }
-            else
-            {
-                SystemSounds.Beep.Play();
             }
         }
 
@@ -295,10 +285,27 @@ namespace BatteryGuardian
             bool isOnAcPower = status.ACLineStatus == AC_LINE_ONLINE;
             bool isCharging = isOnAcPower && (status.BatteryFlag & BATTERY_FLAG_CHARGING) == BATTERY_FLAG_CHARGING;
 
-            string percentageText = status.BatteryLifePercent == BATTERY_PERCENT_UNKNOWN ? "Battery: N/A" : $"Battery: {status.BatteryLifePercent}%";
-            string statusText = status.BatteryFlag == BATTERY_FLAG_UNKNOWN ? "Status: Unknown" :
-                                isCharging ? "Status: Charging" :
-                                isOnAcPower ? "Status: Plugged In (Not Charging)" : "Status: Not Charging";
+            string percentageText = status.BatteryLifePercent == BATTERY_PERCENT_UNKNOWN
+                ? "Battery: N/A"
+                : $"Battery: {status.BatteryLifePercent}%";
+
+            string statusText;
+            if (status.BatteryFlag == BATTERY_FLAG_UNKNOWN)
+            {
+                statusText = "Status: Unknown";
+            }
+            else if (isCharging)
+            {
+                statusText = "Status: Charging";
+            }
+            else if (isOnAcPower)
+            {
+                statusText = "Status: Plugged In (Not Charging)";
+            }
+            else
+            {
+                statusText = "Status: Not Charging";
+            }
 
             BatteryPercentageText.Text = percentageText;
             ChargingStatusText.Text = statusText;
@@ -308,6 +315,7 @@ namespace BatteryGuardian
             {
                 UpdateTrayIcon(status.BatteryLifePercent);
                 _notifyIcon.Text = $"Battery Guardian - {status.BatteryLifePercent}% ({(isCharging ? "Charging" : "Not Charging")})";
+                
                 EvaluateAlerts(status.BatteryLifePercent, isCharging);
             }
         }
@@ -323,31 +331,49 @@ namespace BatteryGuardian
             if (highCondition && !_highAlertActive)
             {
                 _highAlertActive = true;
-                string message = $"Battery is at {batteryPercent}%. Consider unplugging the charger.";
-                ShowToastNotification("Battery Guardian", message);
-                PlayAlertSound(_settings.HighAlertSoundPath);
-                _speechSynthesizer.SpeakAsync(message);
+                ShowToastNotification("Battery Guardian", $"Battery is at {batteryPercent}%. Consider unplugging the charger.");
+                SystemSounds.Beep.Play();
+                _speechSynthesizer.SpeakAsync("Please disconnect the charger."); // <--- Added this
                 StartAlarmTimerIfNeeded();
             }
-            else if (!highCondition) _highAlertActive = false;
+            else if (!highCondition)
+            {
+                _highAlertActive = false;
+            }
 
             if (lowCondition && !_lowAlertActive)
             {
                 _lowAlertActive = true;
-                string message = $"Battery is low at {batteryPercent}%. Please connect the charger.";
-                ShowToastNotification("Battery Guardian", message);
-                PlayAlertSound(_settings.LowAlertSoundPath);
-                _speechSynthesizer.SpeakAsync(message);
+                ShowToastNotification("Battery Guardian", $"Battery is low at {batteryPercent}%. Please connect the charger.");
+                SystemSounds.Beep.Play();
+                _speechSynthesizer.SpeakAsync("Please connect the charger."); // <--- Added this
                 StartAlarmTimerIfNeeded();
             }
-            else if (!lowCondition) _lowAlertActive = false;
+            else if (!lowCondition)
+            {
+                _lowAlertActive = false;
+            }
 
-            if (!_highAlertActive && !_lowAlertActive) _alarmTimer.Stop();
+            if (!_highAlertActive && !_lowAlertActive)
+            {
+                _alarmTimer.Stop();
+            }
         }
 
         private void StartAlarmTimerIfNeeded()
         {
-            if (!_alarmTimer.IsEnabled) _alarmTimer.Start();
+            if (!_alarmTimer.IsEnabled)
+            {
+                _alarmTimer.Start();
+            }
+        }
+
+        private void ShowToastNotification(string title, string message)
+        {
+            _notifyIcon.BalloonTipTitle = title;
+            _notifyIcon.BalloonTipText = message;
+            _notifyIcon.BalloonTipIcon = WinForms.ToolTipIcon.Warning;
+            _notifyIcon.ShowBalloonTip(5000);
         }
     }
 }
