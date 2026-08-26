@@ -57,6 +57,8 @@ Since this repository does not include an installer, you need to compile the app
 
 *Low Threshold* (default: 15%)
 
+*Repeat Alert Every (seconds)* (default: 300)
+
 **Auto-Start with Windows**: The first time you run the app, it will automatically add a registry entry to launch itself every time you log into Windows. To remove it from auto-start, simply open Task Manager > Startup tab, disable "BatteryGuardian", or delete the entry from *HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run*.
 
 ---

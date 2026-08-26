@@ -13,16 +13,20 @@ namespace BatteryGuardian
             Settings = new Settings
             {
                 HighBatteryThreshold = currentSettings.HighBatteryThreshold,
-                LowBatteryThreshold = currentSettings.LowBatteryThreshold
+                LowBatteryThreshold = currentSettings.LowBatteryThreshold,
+                AlertRepeatIntervalSeconds = currentSettings.AlertRepeatIntervalSeconds
             };
+
             HighThresholdBox.Text = Settings.HighBatteryThreshold.ToString();
             LowThresholdBox.Text = Settings.LowBatteryThreshold.ToString();
+            RepeatIntervalBox.Text = Settings.AlertRepeatIntervalSeconds.ToString();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (int.TryParse(HighThresholdBox.Text, out int high) &&
-                int.TryParse(LowThresholdBox.Text, out int low))
+                int.TryParse(LowThresholdBox.Text, out int low) &&
+                int.TryParse(RepeatIntervalBox.Text, out int repeatSec) && repeatSec > 0)
             {
                 if (low >= high)
                 {
@@ -33,6 +37,8 @@ namespace BatteryGuardian
 
                 Settings.HighBatteryThreshold = high;
                 Settings.LowBatteryThreshold = low;
+                Settings.AlertRepeatIntervalSeconds = repeatSec;
+
                 DialogResult = true;
                 Close();
             }

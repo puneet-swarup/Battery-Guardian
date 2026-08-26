@@ -1,7 +1,7 @@
 using System;
 using System.Speech.Synthesis;
 using System.ComponentModel;
-using System.Drawing; // Correct namespace for Bitmap, Icon, Graphics
+using System.Drawing;
 using System.IO;
 using System.Media;
 using System.Runtime.InteropServices;
@@ -47,6 +47,7 @@ namespace BatteryGuardian
         private bool _highAlertActive;
         private bool _lowAlertActive;
         private bool _isExiting;
+        private string _currentAlertMessage = ""; // <-- NEW
 
         public MainWindow()
         {
@@ -60,10 +61,7 @@ namespace BatteryGuardian
             };
             _refreshTimer.Tick += RefreshTimer_Tick;
 
-            _alarmTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(30)
-            };
+            _alarmTimer = new DispatcherTimer();
             _alarmTimer.Tick += AlarmTimer_Tick;
 
             LoadSettings();
@@ -107,19 +105,12 @@ namespace BatteryGuardian
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
-            if (WindowState == WindowState.Minimized)
-            {
-                Hide();
-            }
+            if (WindowState == WindowState.Minimized) Hide();
         }
 
         private void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
-            if (!_isExiting)
-            {
-                e.Cancel = true;
-                Hide();
-            }
+            if (!_isExiting) { e.Cancel = true; Hide(); }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -139,45 +130,34 @@ namespace BatteryGuardian
             _speechSynthesizer.Dispose();
         }
 
-        private void RefreshTimer_Tick(object? sender, EventArgs e)
-        {
-            RefreshBatteryStatus();
-        }
+        private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshBatteryStatus();
 
+        // <-- NEW: Repeats voice + beep, not just beep
         private void AlarmTimer_Tick(object? sender, EventArgs e)
         {
             if (_highAlertActive || _lowAlertActive)
             {
                 SystemSounds.Beep.Play();
+                if (!string.IsNullOrEmpty(_currentAlertMessage))
+                    _speechSynthesizer.SpeakAsync(_currentAlertMessage);
             }
             else
             {
                 _alarmTimer.Stop();
+                _currentAlertMessage = "";
             }
         }
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshBatteryStatus();
-        }
+        private void RefreshButton_Click(object sender, RoutedEventArgs e) => RefreshBatteryStatus();
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
-        {
-            OpenSettingsWindow();
-        }
-
-        // ------- Settings & Startup Logic -------
+        private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettingsWindow();
 
         // ------- Settings & Startup Logic -------
 
         private string GetSettingsPath()
         {
-            // Use LocalApplicationData to ensure write permissions are always granted
             string appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatteryGuardian");
-            if (!Directory.Exists(appDataFolder))
-            {
-                Directory.CreateDirectory(appDataFolder);
-            }
+            if (!Directory.Exists(appDataFolder)) Directory.CreateDirectory(appDataFolder);
             return Path.Combine(appDataFolder, "Settings.json");
         }
 
@@ -212,6 +192,8 @@ namespace BatteryGuardian
                 SaveSettings(_settings);
                 _highAlertActive = false;
                 _lowAlertActive = false;
+                _currentAlertMessage = "";
+                _alarmTimer.Stop();
                 RefreshBatteryStatus();
             }
         }
@@ -231,10 +213,7 @@ namespace BatteryGuardian
                     }
                 }
             }
-            catch
-            {
-                // Silently fail
-            }
+            catch { }
         }
 
         // ------- Battery Logic & Tray Icon -------
@@ -258,13 +237,9 @@ namespace BatteryGuardian
                 else fillBrush = Brushes.Red;
 
                 int fillWidth = (int)(10 * percentage / 100.0);
-                if (fillWidth > 0)
-                {
-                    g.FillRectangle(fillBrush, 1, 3, fillWidth, 10);
-                }
+                if (fillWidth > 0) g.FillRectangle(fillBrush, 1, 3, fillWidth, 10);
             }
 
-            // FULLY QUALIFIED NAMESPACE - WILL COMPILE 100%
             IntPtr hIcon = _trayIconBitmap.GetHicon();
             using (var tmpIcon = System.Drawing.Icon.FromHandle(hIcon))
             {
@@ -290,22 +265,10 @@ namespace BatteryGuardian
                 : $"Battery: {status.BatteryLifePercent}%";
 
             string statusText;
-            if (status.BatteryFlag == BATTERY_FLAG_UNKNOWN)
-            {
-                statusText = "Status: Unknown";
-            }
-            else if (isCharging)
-            {
-                statusText = "Status: Charging";
-            }
-            else if (isOnAcPower)
-            {
-                statusText = "Status: Plugged In (Not Charging)";
-            }
-            else
-            {
-                statusText = "Status: Not Charging";
-            }
+            if (status.BatteryFlag == BATTERY_FLAG_UNKNOWN) statusText = "Status: Unknown";
+            else if (isCharging) statusText = "Status: Charging";
+            else if (isOnAcPower) statusText = "Status: Plugged In (Not Charging)";
+            else statusText = "Status: Not Charging";
 
             BatteryPercentageText.Text = percentageText;
             ChargingStatusText.Text = statusText;
@@ -315,53 +278,73 @@ namespace BatteryGuardian
             {
                 UpdateTrayIcon(status.BatteryLifePercent);
                 _notifyIcon.Text = $"Battery Guardian - {status.BatteryLifePercent}% ({(isCharging ? "Charging" : "Not Charging")})";
-                
-                EvaluateAlerts(status.BatteryLifePercent, isCharging);
+
+                // <-- CHANGED: Pass isOnAcPower
+                EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
             }
         }
 
-        private void EvaluateAlerts(int batteryPercent, bool isCharging)
+        // <-- CHANGED: Now takes isOnAcPower as third parameter
+        private void EvaluateAlerts(int batteryPercent, bool isCharging, bool isOnAcPower)
         {
             int highThreshold = _settings.HighBatteryThreshold;
             int lowThreshold = _settings.LowBatteryThreshold;
 
-            bool highCondition = isCharging && batteryPercent >= highThreshold;
-            bool lowCondition = !isCharging && batteryPercent <= lowThreshold;
+            bool highCondition = isOnAcPower && batteryPercent >= highThreshold;
+            bool lowCondition = !isOnAcPower && batteryPercent <= lowThreshold;
 
+            // Handle High Alert
             if (highCondition && !_highAlertActive)
             {
                 _highAlertActive = true;
-                ShowToastNotification("Battery Guardian", $"Battery is at {batteryPercent}%. Consider unplugging the charger.");
+                string message = $"Battery is at {batteryPercent}%. Consider unplugging the charger.";
+                _currentAlertMessage = message;
+                ShowToastNotification("Battery Guardian", message);
                 SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync("Please disconnect the charger."); // <--- Added this
-                StartAlarmTimerIfNeeded();
+                _speechSynthesizer.SpeakAsync(message);
             }
-            else if (!highCondition)
+            else if (!highCondition && _highAlertActive)
             {
                 _highAlertActive = false;
+                // Only clear the message if Low Alert is NOT active
+                if (!_lowAlertActive)
+                    _currentAlertMessage = "";
             }
 
+            // Handle Low Alert
             if (lowCondition && !_lowAlertActive)
             {
                 _lowAlertActive = true;
-                ShowToastNotification("Battery Guardian", $"Battery is low at {batteryPercent}%. Please connect the charger.");
+                string message = $"Battery is low at {batteryPercent}%. Please connect the charger.";
+                _currentAlertMessage = message;
+                ShowToastNotification("Battery Guardian", message);
                 SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync("Please connect the charger."); // <--- Added this
-                StartAlarmTimerIfNeeded();
+                _speechSynthesizer.SpeakAsync(message);
             }
-            else if (!lowCondition)
+            else if (!lowCondition && _lowAlertActive)
             {
                 _lowAlertActive = false;
+                // Only clear the message if High Alert is NOT active
+                if (!_highAlertActive)
+                    _currentAlertMessage = "";
             }
 
-            if (!_highAlertActive && !_lowAlertActive)
+            // Manage the timer
+            if (_highAlertActive || _lowAlertActive)
+            {
+                // Keep the timer running (it will restart if it was stopped)
+                StartAlarmTimerIfNeeded();
+            }
+            else
             {
                 _alarmTimer.Stop();
+                _currentAlertMessage = "";
             }
         }
 
         private void StartAlarmTimerIfNeeded()
         {
+            _alarmTimer.Interval = TimeSpan.FromSeconds(_settings.AlertRepeatIntervalSeconds);
             if (!_alarmTimer.IsEnabled)
             {
                 _alarmTimer.Start();
