@@ -28,6 +28,7 @@
                    Text="Battery Guardian"
                    FontSize="22"
                    FontWeight="Bold"
+                   Foreground="#222222"
                    HorizontalAlignment="Center"
                    Margin="0,0,0,20"/>
 
@@ -36,6 +37,7 @@
                    Text="Battery: --%"
                    FontSize="28"
                    FontWeight="SemiBold"
+                   Foreground="#111111"
                    HorizontalAlignment="Center"
                    Margin="0,0,0,10"/>
 
@@ -43,47 +45,45 @@
                    Grid.Row="2"
                    Text="Status: Unknown"
                    FontSize="16"
-                   HorizontalAlignment="Center"
                    Foreground="#333333"
+                   HorizontalAlignment="Center"
                    Margin="0,0,0,10"/>
 
         <TextBlock x:Name="EstimatedTimeText"
                    Grid.Row="3"
                    Text=""
                    FontSize="14"
-                   HorizontalAlignment="Center"
                    Foreground="#555555"
-                   Margin="0,0,0,10"/>
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,6"/>
 
-        <!-- NEW: Battery Health row -->
         <TextBlock x:Name="BatteryHealthText"
                    Grid.Row="4"
                    Text=""
                    FontSize="14"
-                   HorizontalAlignment="Center"
                    Foreground="#555555"
-                   Margin="0,0,0,10"/>
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,6"/>
 
         <TextBlock x:Name="LastUpdatedText"
                    Grid.Row="5"
                    Text="Last updated: --"
                    FontSize="12"
-                   HorizontalAlignment="Center"
                    Foreground="#777777"
-                   Margin="0,0,0,10"/>
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,16"/>
 
         <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button x:Name="RefreshButton"
                     Content="Refresh Now"
                     Width="130"
-                    Height="36"
+                    Height="34"
                     FontSize="14"
                     Click="RefreshButton_Click"/>
-
             <Button x:Name="SettingsButton"
-                    Content="⚙ Settings"
-                    Width="100"
-                    Height="36"
+                    Content="⚙  Settings"
+                    Width="110"
+                    Height="34"
                     FontSize="14"
                     Margin="10,0,0,0"
                     Click="SettingsButton_Click"/>

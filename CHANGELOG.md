@@ -8,10 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.0] - 2026-09-23
 
 ### Added
-- **Custom application icon** — a battery-themed icon now appears in the window title bar, the Windows taskbar, and the .exe file itself in Windows Explorer. Replaces the generic Windows application icon.
+- **Custom application icon** — a battery-themed icon now appears in the window title bar, the Windows taskbar, and the `.exe` file itself in Windows Explorer. Replaces the generic Windows application icon.
 
 ### Notes
-- This is Stage 1 of the UI Modernization work. Stage 2 (Fluent theme via WPF-UI) and Stage 3 (dark/light mode) are planned for subsequent releases.
+- An attempt to migrate to a Fluent Windows 11 theme via WPF-UI was reverted in this session. The library's custom window chrome proved unreliable (missing title bar buttons, backdrop conflicts). The app keeps its plain, proven WPF styling. UI modernization will be revisited in a future sprint with a more careful, one-change-at-a-time approach.
 
 ## [1.5.1] - 2026-09-23
 

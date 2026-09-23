@@ -12,7 +12,6 @@ namespace BatteryGuardian
             // When the user clicks a toast, bring the main window to the front.
             ToastNotificationManagerCompat.OnActivated += toastArgs =>
             {
-                // The activation comes in on a background thread — marshal to UI thread.
                 Current.Dispatcher.Invoke(() =>
                 {
                     if (Current.MainWindow is MainWindow mainWindow)

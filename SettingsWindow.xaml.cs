@@ -31,7 +31,7 @@ namespace BatteryGuardian
                 if (low >= high)
                 {
                     System.Windows.MessageBox.Show("Low threshold must be strictly lower than High threshold.",
-                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        "Invalid Input", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -45,7 +45,7 @@ namespace BatteryGuardian
             else
             {
                 System.Windows.MessageBox.Show("Please enter valid numeric values.",
-                    "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    "Invalid Input", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

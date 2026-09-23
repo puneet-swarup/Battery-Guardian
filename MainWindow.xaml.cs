@@ -1,4 +1,5 @@
 using System;
+
 using System.Speech.Synthesis;
 using System.ComponentModel;
 using System.Drawing;
@@ -72,6 +73,7 @@ namespace BatteryGuardian
             Closing += MainWindow_Closing;
             Closed += MainWindow_Closed;
             StateChanged += MainWindow_StateChanged;
+            // Continuously follow Windows theme changes (light/dark) in real time.
         }
 
         private void InitializeTrayIcon()
@@ -221,7 +223,11 @@ namespace BatteryGuardian
 
         private void OpenSettingsWindow()
         {
-            var settingsWindow = new SettingsWindow(_settings);
+            var settingsWindow = new SettingsWindow(_settings)
+            {
+                Owner = this   // NEW: makes the window center on the main window
+            };
+
             if (settingsWindow.ShowDialog() == true)
             {
                 _settings = settingsWindow.Settings;
