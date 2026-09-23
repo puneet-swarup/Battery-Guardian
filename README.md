@@ -1,5 +1,14 @@
 # Battery Guardian
 [![Build and Publish EXE](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/build.yml/badge.svg)](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/build.yml)
+[![Latest Release](https://img.shields.io/github/v/release/puneet-swarup/Battery-Guardian?color=blue&label=release)](https://github.com/puneet-swarup/Battery-Guardian/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/puneet-swarup/Battery-Guardian/blob/main/LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?logo=windows)](https://www.microsoft.com/windows)
+[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![Downloads](https://img.shields.io/github/downloads/puneet-swarup/Battery-Guardian/total?color=success)](https://github.com/puneet-swarup/Battery-Guardian/releases)
+[![Stars](https://img.shields.io/github/stars/puneet-swarup/Battery-Guardian?color=yellow)](https://github.com/puneet-swarup/Battery-Guardian/stargazers)
+[![Issues](https://img.shields.io/github/issues/puneet-swarup/Battery-Guardian)](https://github.com/puneet-swarup/Battery-Guardian/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/puneet-swarup/Battery-Guardian)](https://github.com/puneet-swarup/Battery-Guardian/commits/main)
+[![Code Size](https://img.shields.io/github/languages/code-size/puneet-swarup/Battery-Guardian)](https://github.com/puneet-swarup/Battery-Guardian)
 
 A lightweight, open-source WPF application for Windows that helps extend your laptop battery lifespan by notifying you when it's time to unplug or plug in your charger.
 
