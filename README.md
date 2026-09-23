@@ -11,6 +11,7 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 
 - **Real-time Monitoring**: Displays current battery percentage and charging status.
 - **Estimated Time**: Shows time remaining while discharging, and time to full while charging (when the OS reports it).
+  > Estimated Time: Shows time remaining (hybrid native + WMI fallback) while discharging, and time to full while charging (when the OS reports it). Some laptops may still show "Calculating..." if neither method provides a value.
 - **Automatic Refresh**: Updates the status every 30 seconds.
 - **Manual Refresh**: Click the "Refresh Now" button for instant updates.
 - **Smart Alerts**:

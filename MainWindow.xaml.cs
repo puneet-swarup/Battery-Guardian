@@ -3,6 +3,7 @@ using System.Speech.Synthesis;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Management; // NEW: For WMI fallback
 using System.Media;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -47,18 +48,14 @@ namespace BatteryGuardian
         private bool _highAlertActive;
         private bool _lowAlertActive;
         private bool _isExiting;
-        private string _currentAlertMessage = ""; // <-- NEW
+        private string _currentAlertMessage = "";
 
         public MainWindow()
         {
             InitializeComponent();
-
             _speechSynthesizer = new SpeechSynthesizer();
 
-            _refreshTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(30)
-            };
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
             _refreshTimer.Tick += RefreshTimer_Tick;
 
             _alarmTimer = new DispatcherTimer();
@@ -132,7 +129,6 @@ namespace BatteryGuardian
 
         private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshBatteryStatus();
 
-        // <-- NEW: Repeats voice + beep, not just beep
         private void AlarmTimer_Tick(object? sender, EventArgs e)
         {
             if (_highAlertActive || _lowAlertActive)
@@ -275,19 +271,19 @@ namespace BatteryGuardian
             ChargingStatusText.Text = statusText;
             LastUpdatedText.Text = $"Last updated: {DateTime.Now:T}";
 
-            // NEW: Estimated time display
+            // NEW: Hybrid estimated time (native first, then WMI fallback)
             EstimatedTimeText.Text = BuildEstimatedTimeText(status, isOnAcPower, isCharging);
 
             if (status.BatteryLifePercent != BATTERY_PERCENT_UNKNOWN)
             {
                 UpdateTrayIcon(status.BatteryLifePercent);
 
-                // NEW: Enhanced tooltip
+                // Enhanced tooltip
                 string chargeWord = isCharging ? "Charging" : (isOnAcPower ? "Plugged In" : "Not Charging");
                 string timeHint = "";
                 if (!isOnAcPower)
                 {
-                    string remaining = FormatTimeSpan(status.BatteryLifeTime);
+                    string remaining = GetBestTimeRemaining(status);
                     if (!string.IsNullOrEmpty(remaining)) timeHint = $" ~{remaining} left";
                 }
                 else if (isCharging)
@@ -296,7 +292,6 @@ namespace BatteryGuardian
                     if (!string.IsNullOrEmpty(toFull)) timeHint = $" ~{toFull} to full";
                 }
 
-                // NotifyIcon.Text has a 63-character limit on Windows, so keep it short.
                 string tooltip = $"Battery Guardian - {status.BatteryLifePercent}% ({chargeWord}){timeHint}";
                 if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 60) + "...";
                 _notifyIcon.Text = tooltip;
@@ -311,15 +306,12 @@ namespace BatteryGuardian
 
         /// <summary>
         /// Formats a duration (in seconds) as a human-readable string like "2h 15m" or "45m".
-        /// Returns an empty string if the value is unknown (0 or uint.MaxValue) or unreasonable.
+        /// Returns an empty string if the value is unknown or unreasonable.
         /// </summary>
         private string FormatTimeSpan(uint seconds)
         {
-            // Windows returns 0 or uint.MaxValue when the value is unknown or on AC power.
             if (seconds == 0 || seconds == uint.MaxValue) return "";
-
-            // Sanity check: > 100 hours is almost certainly bogus.
-            if (seconds > 360_000) return "";
+            if (seconds > 360_000) return ""; // > 100 hours is bogus
 
             var ts = TimeSpan.FromSeconds(seconds);
             if (ts.TotalHours >= 1)
@@ -328,7 +320,55 @@ namespace BatteryGuardian
         }
 
         /// <summary>
-        /// Builds the text shown in the EstimatedTimeText TextBlock based on the current power state.
+        /// Queries WMI (Win32_Battery) for EstimatedRunTime (in minutes) when discharging.
+        /// Returns null if unavailable.
+        /// </summary>
+        private uint? GetEstimatedRunTimeFromWmi()
+        {
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher("SELECT EstimatedRunTime FROM Win32_Battery"))
+                {
+                    foreach (ManagementObject queryObj in searcher.Get())
+                    {
+                        var runTime = (uint)queryObj["EstimatedRunTime"];
+                        // WMI returns 71582788 (max) or 0 when unknown; < 6000 minutes (100h) is sane.
+                        if (runTime > 0 && runTime < 6000)
+                        {
+                            return runTime;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // WMI might fail on some systems; ignore and fall back.
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the best available "time remaining" string for discharging,
+        /// trying the native API first, then WMI.
+        /// </summary>
+        private string GetBestTimeRemaining(SYSTEM_POWER_STATUS status)
+        {
+            // 1. Native API
+            string native = FormatTimeSpan(status.BatteryLifeTime);
+            if (!string.IsNullOrEmpty(native)) return native;
+
+            // 2. WMI fallback
+            uint? wmiMinutes = GetEstimatedRunTimeFromWmi();
+            if (wmiMinutes.HasValue)
+            {
+                return FormatTimeSpan(wmiMinutes.Value * 60); // Convert minutes → seconds
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Builds the text shown in the EstimatedTimeText TextBlock.
         /// </summary>
         private string BuildEstimatedTimeText(SYSTEM_POWER_STATUS status, bool isOnAcPower, bool isCharging)
         {
@@ -340,15 +380,16 @@ namespace BatteryGuardian
 
             if (isOnAcPower)
             {
-                // Plugged in but not actively charging - OS rarely reports useful time here.
-                return "";
+                return ""; // Plugged in but not charging – no useful estimate.
             }
 
-            string remaining = FormatTimeSpan(status.BatteryLifeTime);
-            return string.IsNullOrEmpty(remaining) ? "Time remaining: Calculating..." : $"Time remaining: {remaining}";
+            // Discharging: use hybrid approach
+            string remaining = GetBestTimeRemaining(status);
+            return string.IsNullOrEmpty(remaining)
+                ? "Time remaining: Calculating..."
+                : $"Time remaining: {remaining}";
         }
 
-        // <-- CHANGED: Now takes isOnAcPower as third parameter
         private void EvaluateAlerts(int batteryPercent, bool isCharging, bool isOnAcPower)
         {
             int highThreshold = _settings.HighBatteryThreshold;
@@ -357,7 +398,6 @@ namespace BatteryGuardian
             bool highCondition = isOnAcPower && batteryPercent >= highThreshold;
             bool lowCondition = !isOnAcPower && batteryPercent <= lowThreshold;
 
-            // Handle High Alert
             if (highCondition && !_highAlertActive)
             {
                 _highAlertActive = true;
@@ -366,16 +406,14 @@ namespace BatteryGuardian
                 ShowToastNotification("Battery Guardian", message);
                 SystemSounds.Beep.Play();
                 _speechSynthesizer.SpeakAsync(message);
+                StartAlarmTimerIfNeeded();
             }
             else if (!highCondition && _highAlertActive)
             {
                 _highAlertActive = false;
-                // Only clear the message if Low Alert is NOT active
-                if (!_lowAlertActive)
-                    _currentAlertMessage = "";
+                if (!_lowAlertActive) _currentAlertMessage = "";
             }
 
-            // Handle Low Alert
             if (lowCondition && !_lowAlertActive)
             {
                 _lowAlertActive = true;
@@ -384,19 +422,16 @@ namespace BatteryGuardian
                 ShowToastNotification("Battery Guardian", message);
                 SystemSounds.Beep.Play();
                 _speechSynthesizer.SpeakAsync(message);
+                StartAlarmTimerIfNeeded();
             }
             else if (!lowCondition && _lowAlertActive)
             {
                 _lowAlertActive = false;
-                // Only clear the message if High Alert is NOT active
-                if (!_highAlertActive)
-                    _currentAlertMessage = "";
+                if (!_highAlertActive) _currentAlertMessage = "";
             }
 
-            // Manage the timer
             if (_highAlertActive || _lowAlertActive)
             {
-                // Keep the timer running (it will restart if it was stopped)
                 StartAlarmTimerIfNeeded();
             }
             else
@@ -409,10 +444,7 @@ namespace BatteryGuardian
         private void StartAlarmTimerIfNeeded()
         {
             _alarmTimer.Interval = TimeSpan.FromSeconds(_settings.AlertRepeatIntervalSeconds);
-            if (!_alarmTimer.IsEnabled)
-            {
-                _alarmTimer.Start();
-            }
+            if (!_alarmTimer.IsEnabled) _alarmTimer.Start();
         }
 
         private void ShowToastNotification(string title, string message)

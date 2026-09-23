@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-23
+
+### Fixed
+- Estimated time remaining now uses a hybrid approach: first the native Windows API, then falls back to WMI (`Win32_Battery.EstimatedRunTime`) if the native API returns an unknown value.
+- This resolves the "Calculating..." message on laptops whose drivers do not report `BatteryLifeTime` via the standard API.
+
+### Changed
+- Tray icon tooltip also benefits from the WMI fallback.
+...
+
 ## [1.2.0] - 2026-09-23
 
 ### Added
