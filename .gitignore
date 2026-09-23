@@ -27,6 +27,7 @@ packages/
 # Installer output (Excluding the Installer project entirely)
 BatteryGuardianInstaller/
 PublishOutput/
+PublishOutput-FDD/
 
 # User settings (So each user gets their own default settings on first run)
 Settings.json

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-09-24
+
+### Added
+- **Two release variants**:
+  - **Self-Contained** (~200 MB) — bundles the .NET 10 runtime; works on any Windows 10/11 machine with zero setup.
+  - **Framework-Dependent** (~25 MB) — for users who already have the .NET 10 Desktop Runtime installed. 87% smaller download.
+- Both variants include the same installer scripts and are attached to every GitHub Release.
+
+### Changed
+- Removed `<SelfContained>true</SelfContained>` from `BatteryGuardian.csproj`. The publish step now controls this via the `--self-contained` flag, allowing both variants to be built from the same source.
+- CI workflow now builds, uploads, and releases both variants.
+
+### Fixed
+- `install.ps1` now correctly copies `uninstall.bat` and `uninstall.ps1` into the install folder so users can remove the app from the install directory itself.
+
 ## [1.9.0] - 2026-09-24
 
 ### Added

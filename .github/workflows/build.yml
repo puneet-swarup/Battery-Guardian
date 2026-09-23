@@ -13,6 +13,8 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
 
     - name: Setup .NET 10
       uses: actions/setup-dotnet@v5
@@ -28,18 +30,28 @@ jobs:
     - name: Run Tests
       run: dotnet test -c Release --no-build --verbosity normal
 
-    - name: Publish (Self-Contained x64 Executable)
+    - name: Publish (Self-Contained x64)
       run: dotnet publish BatteryGuardian.csproj -c Release -r win-x64 --self-contained true -o PublishOutput
-      
-    - name: Copy installer scripts into publish output
+
+    - name: Publish (Framework-Dependent x64)
+      run: dotnet publish BatteryGuardian.csproj -c Release -o PublishOutput-FDD
+
+    - name: Copy installer scripts into both outputs
       run: |
         Copy-Item install.bat,install.ps1,uninstall.bat,uninstall.ps1 PublishOutput\ -Force
+        Copy-Item install.bat,install.ps1,uninstall.bat,uninstall.ps1 PublishOutput-FDD\ -Force
 
-    - name: Upload EXE Artifact
+    - name: Upload Self-Contained Artifact
       uses: actions/upload-artifact@v5
       with:
-        name: BatteryGuardian-x64-Release
+        name: BatteryGuardian-x64-SelfContained
         path: PublishOutput
+
+    - name: Upload Framework-Dependent Artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: BatteryGuardian-x64-FrameworkDependent
+        path: PublishOutput-FDD
 
   release:
     needs: build
@@ -49,23 +61,33 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Download Artifact
+      - name: Download Self-Contained Artifact
         uses: actions/download-artifact@v5
         with:
-          name: BatteryGuardian-x64-Release
-          path: ./artifact
+          name: BatteryGuardian-x64-SelfContained
+          path: ./artifact-selfcontained
 
-      - name: Zip the folder
+      - name: Download Framework-Dependent Artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: BatteryGuardian-x64-FrameworkDependent
+          path: ./artifact-fdd
+
+      - name: Zip both variants
         run: |
-          cd artifact
-          zip -r ../BatteryGuardian-x64-Release.zip .
+          cd artifact-selfcontained
+          zip -r ../BatteryGuardian-x64-SelfContained.zip .
+          cd ../artifact-fdd
+          zip -r ../BatteryGuardian-x64-FrameworkDependent.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Battery Guardian ${{ github.ref_name }}
-          files: BatteryGuardian-x64-Release.zip
+          files: |
+            BatteryGuardian-x64-SelfContained.zip
+            BatteryGuardian-x64-FrameworkDependent.zip
           draft: false
           prerelease: false
           generate_release_notes: true

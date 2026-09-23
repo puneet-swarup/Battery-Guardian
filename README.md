@@ -45,6 +45,17 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 
 ---
 
+## 📦 Download Options
+
+| Variant | Size | Requires |
+|---|---|---|
+| **Self-Contained** (recommended for most) | ~200 MB | Nothing — the .NET runtime is bundled |
+| **Framework-Dependent** (for advanced users) | ~10 MB | [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) must be installed |
+
+Both variants contain the same app and the same installer scripts. Pick the small one if you already have .NET 10 installed; pick the big one if you want zero setup.
+
+---
+
 ## 🚀 Installation
 
 1. Download the latest `BatteryGuardian-x64-Release.zip` from the [Releases page](https://github.com/puneet-swarup/Battery-Guardian/releases/latest).
@@ -131,3 +142,7 @@ Contributions are welcome! Please open an issue first to discuss what you'd like
 
 ## 🛡️ Disclaimer
 This application uses the standard Windows APIs (GetSystemPowerStatus) to read battery data. It does not have the ability to physically stop your laptop from charging (that is a hardware-level limitation). It is designed solely as an alert assistant to remind you to manually unplug your charger when the battery is full.
+
+## 🔐 Code Signing
+
+Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). See [Code Signing Policy](CODE_SIGNING_POLICY.md).

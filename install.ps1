@@ -25,6 +25,9 @@ $files | ForEach-Object {
 }
 Write-Host "    Files in install dir: $((Get-ChildItem $installDir -Recurse).Count)"
 Write-Host ""
+# Copy uninstall scripts so the app can be removed from the install folder
+Copy-Item -Path (Join-Path $sourceDir 'uninstall.bat') -Destination $installDir -Force
+Copy-Item -Path (Join-Path $sourceDir 'uninstall.ps1') -Destination $installDir -Force
 
 # Shortcut creation
 $exePath = Join-Path $installDir 'BatteryGuardian.exe'
