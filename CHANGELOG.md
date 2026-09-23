@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-09-23
+
+### Fixed
+- **Reminder alerts now fire the full alert**: previously, the repeat timer only played the beep and spoke the message, but never showed a toast notification. Now the toast + beep + voice fire together on every reminder.
+- **Changed repeat interval now takes effect immediately** when a new alert starts, instead of only applying the next time the app restarts.
+
+### Added
+- **Test menu items** in the tray right-click menu ("Test High Alert" and "Test Low Alert") for verifying alerts without waiting for a real battery event.
+
+## [1.5.0] - 2026-09-23
+
+### Changed
+- **Native Windows toast notifications** — replaced the custom WPF popup and balloon tip with real Windows 10/11 Action Center toasts (the same style used by Outlook, Teams, and WhatsApp).
+- Toasts now persist in the Action Center, so you can see them later.
+- Clicking a toast brings Battery Guardian's main window to the front (no duplicate instance).
+
+### Added
+- `ToastService` — a thin wrapper around `Microsoft.Toolkit.Uwp.Notifications` for sending native toasts.
+- Toast activation handling in `App.xaml.cs`.
+
+### Technical
+- Target framework bumped from `net10.0-windows` to `net10.0-windows10.0.17763.0` (Windows 10 1809+) to enable the Windows SDK notification APIs.
+- Added NuGet package `Microsoft.Toolkit.Uwp.Notifications` v7.1.3.
+
 ## [1.4.0] - 2026-09-23
 
 ### Added

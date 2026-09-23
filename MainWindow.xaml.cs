@@ -52,6 +52,7 @@ namespace BatteryGuardian
         private readonly BatteryAlertEvaluator _evaluator = new();
         private readonly BatteryHealthService _healthService = new();
         private BatteryHealthInfo? _batteryHealth;
+        private readonly ToastService _toastService = new();
 
         public MainWindow()
         {
@@ -78,6 +79,10 @@ namespace BatteryGuardian
             var contextMenu = new WinForms.ContextMenuStrip();
             contextMenu.Items.Add("Open", null, (s, e) => RestoreWindow());
             contextMenu.Items.Add("Settings", null, (s, e) => OpenSettingsWindow());
+            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
+            contextMenu.Items.Add("Test High Alert", null, (s, e) => TriggerTestAlert(high: true));
+            contextMenu.Items.Add("Test Low Alert", null, (s, e) => TriggerTestAlert(high: false));
+            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
             contextMenu.Items.Add("Exit", null, ExitMenuItem_Click);
 
             _notifyIcon = new WinForms.NotifyIcon
@@ -88,6 +93,33 @@ namespace BatteryGuardian
                 ContextMenuStrip = contextMenu
             };
             _notifyIcon.DoubleClick += (s, e) => RestoreWindow();
+        }
+
+        private void TriggerTestAlert(bool high)
+        {
+            // Simulate the alert firing, regardless of current battery state.
+            if (high)
+            {
+                _highAlertActive = false;
+                string message = $"TEST: Battery is at {_settings.HighBatteryThreshold}%. Consider unplugging the charger.";
+                _currentAlertMessage = message;
+                ShowToastNotification("Battery Guardian (Test)", message);
+                SystemSounds.Beep.Play();
+                _speechSynthesizer.SpeakAsync(message);
+                _highAlertActive = true;
+                StartAlarmTimerIfNeeded(forceRestart: true);
+            }
+            else
+            {
+                _lowAlertActive = false;
+                string message = $"TEST: Battery is low at {_settings.LowBatteryThreshold}%. Please connect the charger.";
+                _currentAlertMessage = message;
+                ShowToastNotification("Battery Guardian (Test)", message);
+                SystemSounds.Beep.Play();
+                _speechSynthesizer.SpeakAsync(message);
+                _lowAlertActive = true;
+                StartAlarmTimerIfNeeded(forceRestart: true);
+            }
         }
 
         private void RestoreWindow()
@@ -137,9 +169,13 @@ namespace BatteryGuardian
         {
             if (_highAlertActive || _lowAlertActive)
             {
-                SystemSounds.Beep.Play();
+                // Repeat the FULL alert: native toast + beep + voice.
                 if (!string.IsNullOrEmpty(_currentAlertMessage))
+                {
+                    ShowToastNotification("Battery Guardian (Reminder)", _currentAlertMessage);
+                    SystemSounds.Beep.Play();
                     _speechSynthesizer.SpeakAsync(_currentAlertMessage);
+                }
             }
             else
             {
@@ -428,7 +464,7 @@ namespace BatteryGuardian
                 ShowToastNotification("Battery Guardian", newState.HighAlertMessage);
                 SystemSounds.Beep.Play();
                 _speechSynthesizer.SpeakAsync(newState.HighAlertMessage);
-                StartAlarmTimerIfNeeded();
+                StartAlarmTimerIfNeeded(forceRestart: true);
             }
             else if (!newState.HighAlertShouldBeActive && _highAlertActive)
             {
@@ -447,7 +483,7 @@ namespace BatteryGuardian
                 ShowToastNotification("Battery Guardian", newState.LowAlertMessage);
                 SystemSounds.Beep.Play();
                 _speechSynthesizer.SpeakAsync(newState.LowAlertMessage);
-                StartAlarmTimerIfNeeded();
+                StartAlarmTimerIfNeeded(forceRestart: true);
             }
             else if (!newState.LowAlertShouldBeActive && _lowAlertActive)
             {
@@ -459,7 +495,7 @@ namespace BatteryGuardian
             // --- Manage the repeat reminder timer ---
             if (_highAlertActive || _lowAlertActive)
             {
-                StartAlarmTimerIfNeeded();
+                StartAlarmTimerIfNeeded(forceRestart: true);
             }
             else
             {
@@ -468,18 +504,24 @@ namespace BatteryGuardian
             }
         }
 
-        private void StartAlarmTimerIfNeeded()
+        private void StartAlarmTimerIfNeeded(bool forceRestart = false)
         {
             _alarmTimer.Interval = TimeSpan.FromSeconds(_settings.AlertRepeatIntervalSeconds);
-            if (!_alarmTimer.IsEnabled) _alarmTimer.Start();
+
+            if (forceRestart && _alarmTimer.IsEnabled)
+            {
+                _alarmTimer.Stop();
+            }
+
+            if (!_alarmTimer.IsEnabled)
+            {
+                _alarmTimer.Start();
+            }
         }
 
         private void ShowToastNotification(string title, string message)
         {
-            _notifyIcon.BalloonTipTitle = title;
-            _notifyIcon.BalloonTipText = message;
-            _notifyIcon.BalloonTipIcon = WinForms.ToolTipIcon.Warning;
-            _notifyIcon.ShowBalloonTip(5000);
+            _toastService.Show(title, message);
         }
     }
 }

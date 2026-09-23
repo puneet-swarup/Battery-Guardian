@@ -29,6 +29,7 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 - **Repeat Reminders**: If you ignore an alert, the voice message and beep will **repeat automatically** after a configurable interval (default: 5 minutes) until you act.
 - **Auto-Stop**: The alert stops **immediately** when you plug in/unplug the charger, even if the battery percentage hasn't crossed the threshold yet.
 - **Voice Notifications**: Uses Windows built-in Text-to-Speech for clear audio alerts.
+- **Native Windows Toasts**: Alerts appear as real Windows 10/11 Action Center notifications (the same style as Outlook/Teams). They persist in the Action Center so you don't miss them.
 - **Dynamic System Tray Icon**: The tray icon visually updates to show your battery level (Green for high, Orange for medium, Red for low), and the tooltip shows percentage and charging status at a glance.
 - **Fully Configurable**: Customize the High threshold, Low threshold, and Repeat interval via the Settings window.
 - **Auto-Start**: Registers itself to launch automatically when you sign into Windows (on first run).
@@ -37,7 +38,7 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 
 ## 🛠️ Prerequisites
 
-- **Windows 10 or 11** (64-bit).
+- **Windows 10 version 1809 (build 17763) or later** (64-bit)..
 - **Visual Studio 2022** (with the `.NET Desktop Development` workload installed).
 - **.NET 10 SDK** (included with VS 2022 17.10+).
 
