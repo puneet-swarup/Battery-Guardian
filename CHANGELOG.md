@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-09-23
+
+### Added
+- **Custom application icon** — a battery-themed icon now appears in the window title bar, the Windows taskbar, and the .exe file itself in Windows Explorer. Replaces the generic Windows application icon.
+
+### Notes
+- This is Stage 1 of the UI Modernization work. Stage 2 (Fluent theme via WPF-UI) and Stage 3 (dark/light mode) are planned for subsequent releases.
+
 ## [1.5.1] - 2026-09-23
 
 ### Fixed

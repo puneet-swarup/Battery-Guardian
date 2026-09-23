@@ -34,6 +34,7 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 - **Fully Configurable**: Customize the High threshold, Low threshold, and Repeat interval via the Settings window.
 - **Auto-Start**: Registers itself to launch automatically when you sign into Windows (on first run).
 - **Battery Health**: Displays the current full-charge capacity vs. original design capacity (wear level), when the laptop reports it.
+- **Native app icon** — battery-themed icon across the window, taskbar, and .exe.
 ---
 
 ## 🛠️ Prerequisites
