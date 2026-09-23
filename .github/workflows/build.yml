@@ -25,6 +25,9 @@ jobs:
     - name: Build
       run: dotnet build -c Release --no-restore
       
+    - name: Run Tests
+      run: dotnet test -c Release --no-build --verbosity normal
+
     - name: Publish (Self-Contained x64 Executable)
       run: dotnet publish -c Release -r win-x64 --self-contained true -o PublishOutput --no-build
       

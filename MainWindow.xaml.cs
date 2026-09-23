@@ -50,6 +50,8 @@ namespace BatteryGuardian
         private bool _isExiting;
         private string _currentAlertMessage = "";
 
+        private readonly BatteryAlertEvaluator _evaluator = new();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -392,44 +394,52 @@ namespace BatteryGuardian
 
         private void EvaluateAlerts(int batteryPercent, bool isCharging, bool isOnAcPower)
         {
-            int highThreshold = _settings.HighBatteryThreshold;
-            int lowThreshold = _settings.LowBatteryThreshold;
+            // Ask the pure evaluator what should happen right now.
+            AlertState newState = _evaluator.Evaluate(
+                batteryPercent,
+                isOnAcPower,
+                _settings.HighBatteryThreshold,
+                _settings.LowBatteryThreshold);
 
-            bool highCondition = isOnAcPower && batteryPercent >= highThreshold;
-            bool lowCondition = !isOnAcPower && batteryPercent <= lowThreshold;
-
-            if (highCondition && !_highAlertActive)
+            // --- Handle the High alert transition ---
+            if (newState.HighAlertShouldBeActive && !_highAlertActive)
             {
+                // Transition: INACTIVE -> ACTIVE. Fire the alert once.
                 _highAlertActive = true;
-                string message = $"Battery is at {batteryPercent}%. Consider unplugging the charger.";
-                _currentAlertMessage = message;
-                ShowToastNotification("Battery Guardian", message);
+                _currentAlertMessage = newState.HighAlertMessage;
+
+                ShowToastNotification("Battery Guardian", newState.HighAlertMessage);
                 SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync(message);
+                _speechSynthesizer.SpeakAsync(newState.HighAlertMessage);
                 StartAlarmTimerIfNeeded();
             }
-            else if (!highCondition && _highAlertActive)
+            else if (!newState.HighAlertShouldBeActive && _highAlertActive)
             {
+                // Transition: ACTIVE -> INACTIVE. Clear the alert.
                 _highAlertActive = false;
                 if (!_lowAlertActive) _currentAlertMessage = "";
             }
 
-            if (lowCondition && !_lowAlertActive)
+            // --- Handle the Low alert transition ---
+            if (newState.LowAlertShouldBeActive && !_lowAlertActive)
             {
+                // Transition: INACTIVE -> ACTIVE. Fire the alert once.
                 _lowAlertActive = true;
-                string message = $"Battery is low at {batteryPercent}%. Please connect the charger.";
-                _currentAlertMessage = message;
-                ShowToastNotification("Battery Guardian", message);
+                _currentAlertMessage = newState.LowAlertMessage;
+
+                ShowToastNotification("Battery Guardian", newState.LowAlertMessage);
                 SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync(message);
+                _speechSynthesizer.SpeakAsync(newState.LowAlertMessage);
                 StartAlarmTimerIfNeeded();
             }
-            else if (!lowCondition && _lowAlertActive)
+            else if (!newState.LowAlertShouldBeActive && _lowAlertActive)
             {
+                // Transition: ACTIVE -> INACTIVE. Clear the alert.
                 _lowAlertActive = false;
                 if (!_highAlertActive) _currentAlertMessage = "";
             }
 
+            // --- Manage the repeat reminder timer ---
             if (_highAlertActive || _lowAlertActive)
             {
                 StartAlarmTimerIfNeeded();

@@ -83,6 +83,18 @@ You can safely edit this file with a text editor if you prefer, but it is simple
 
 See *CHANGELOG.md* for a full history of changes.
 
+## 🧪 Running Tests
+
+The project includes unit tests for the alert-evaluation logic. To run them:
+
+```cmd
+dotnet test
+```
+
+Or from Visual Studio: Test → Run All Tests (Ctrl + R, A).
+
+All tests must pass before submitting a pull request.
+
 ## 🤝 Contributing
 Contributions are welcome! Please open an issue first to discuss what you'd like to change, and check the Pull Request template when submitting code.
 

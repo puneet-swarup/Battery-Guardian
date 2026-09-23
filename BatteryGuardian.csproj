@@ -19,5 +19,15 @@
 	  <PackageReference Include="System.Management" Version="10.0.12" />
 	  <PackageReference Include="System.Speech" Version="10.0.12" />
 	</ItemGroup>
+	
+	  <ItemGroup>
+    <!-- Exclude the test project folder so it doesn't get pulled into the main assembly -->
+    <Compile Remove="BatteryGuardian.Tests\**" />
+    <None Remove="BatteryGuardian.Tests\**" />
+    <Page Remove="BatteryGuardian.Tests\**" />
+    <ApplicationDefinition Remove="BatteryGuardian.Tests\**" />
+    <Resource Remove="BatteryGuardian.Tests\**" />
+    <EmbeddedResource Remove="BatteryGuardian.Tests\**" />
+  </ItemGroup>
 
 </Project>

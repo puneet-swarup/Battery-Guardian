@@ -1,6 +1,4 @@
 <Solution>
   <Project Path="BatteryGuardian.csproj" />
-  <Project Path="BatteryGuardianInstaller/BatteryGuardianInstaller.vdproj" Type="Installer">
-    <Build />
-  </Project>
+  <Project Path="BatteryGuardian.Tests/BatteryGuardian.Tests.csproj" />
 </Solution>
