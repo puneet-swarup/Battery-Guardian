@@ -23,7 +23,7 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 - **Dynamic System Tray Icon**: The tray icon visually updates to show your battery level (Green for high, Orange for medium, Red for low), and the tooltip shows percentage and charging status at a glance.
 - **Fully Configurable**: Customize the High threshold, Low threshold, and Repeat interval via the Settings window.
 - **Auto-Start**: Registers itself to launch automatically when you sign into Windows (on first run).
-
+- **Battery Health**: Displays the current full-charge capacity vs. original design capacity (wear level), when the laptop reports it.
 ---
 
 ## 🛠️ Prerequisites
@@ -48,6 +48,7 @@ Since this repository does not include an installer, you need to compile the app
 
 4. **Build and Run**: Press F5 to compile and run the app.
 
+--- 
 ## 📖 How to Use
 **First Launch**: When you run the app, it will immediately minimize to the System Tray (bottom-right corner of your taskbar). You will see a battery icon.
 
@@ -61,14 +62,18 @@ Since this repository does not include an installer, you need to compile the app
 
   - Repeat Alert Every (seconds) (default: 300)
 
-**Auto-Start with Windows**: The first time you run the app, it will automatically add a registry entry to launch itself every time you log into Windows. To remove it from auto-start, simply open Task Manager > Startup tab, disable "BatteryGuardian", or delete the entry from ~HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run~.
+**Auto-Start with Windows**: The first time you run the app, it will automatically add a registry entry to launch itself every time you log into Windows. To remove it from auto-start, simply open Task Manager > Startup tab, disable "BatteryGuardian", or delete the entry from *HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run*.
+
+---
 
 ## ⚙️ Configuration
 All settings are saved locally to:
 
-~%LocalAppData%\BatteryGuardian\Settings.json~
+*%LocalAppData%\BatteryGuardian\Settings.json*
 
 You can safely edit this file with a text editor if you prefer, but it is simpler to use the built-in Settings window.
+
+---
 
 ## 🗺️ Roadmap
 - Native Windows toast notifications with action buttons (Snooze / Dismiss).
@@ -83,6 +88,8 @@ You can safely edit this file with a text editor if you prefer, but it is simple
 
 See *CHANGELOG.md* for a full history of changes.
 
+---
+
 ## 🧪 Running Tests
 
 The project includes unit tests for the alert-evaluation logic. To run them:
@@ -95,8 +102,12 @@ Or from Visual Studio: Test → Run All Tests (Ctrl + R, A).
 
 All tests must pass before submitting a pull request.
 
+---
+
 ## 🤝 Contributing
 Contributions are welcome! Please open an issue first to discuss what you'd like to change, and check the Pull Request template when submitting code.
+
+---
 
 ## 🛡️ Disclaimer
 This application uses the standard Windows APIs (GetSystemPowerStatus) to read battery data. It does not have the ability to physically stop your laptop from charging (that is a hardware-level limitation). It is designed solely as an alert assistant to remind you to manually unplug your charger when the battery is full.

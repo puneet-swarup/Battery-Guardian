@@ -49,8 +49,9 @@ namespace BatteryGuardian
         private bool _lowAlertActive;
         private bool _isExiting;
         private string _currentAlertMessage = "";
-
         private readonly BatteryAlertEvaluator _evaluator = new();
+        private readonly BatteryHealthService _healthService = new();
+        private BatteryHealthInfo? _batteryHealth;
 
         public MainWindow()
         {
@@ -115,6 +116,7 @@ namespace BatteryGuardian
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             EnsureStartup();
+            LoadBatteryHealth();
             RefreshBatteryStatus();
             _refreshTimer.Start();
         }
@@ -212,6 +214,21 @@ namespace BatteryGuardian
                 }
             }
             catch { }
+        }
+
+        private void LoadBatteryHealth()
+        {
+            _batteryHealth = _healthService.GetBatteryHealth();
+
+            if (_batteryHealth == null)
+            {
+                BatteryHealthText.Text = "Battery health: Unavailable";
+                return;
+            }
+
+            BatteryHealthText.Text =
+                $"Battery health: {_batteryHealth.HealthPercent}% ({_batteryHealth.HealthLabel}) — " +
+                $"{_batteryHealth.FullChargeCapacityMwh:N0} / {_batteryHealth.DesignCapacityMwh:N0} mWh";
         }
 
         // ------- Battery Logic & Tray Icon -------

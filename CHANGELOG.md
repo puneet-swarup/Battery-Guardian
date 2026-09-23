@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-23
+
+### Added
+- **Battery Health display** in the main window: shows the current full-charge capacity vs. original design capacity as a percentage, with a qualitative label (Good / Fair / Poor). Data is sourced from WMI (`BatteryStaticData` and `BatteryFullChargedCapacity`).
+- **`BatteryHealthService`** and **`BatteryHealthInfo`** — new classes for querying and representing battery wear data.
+- **10 new unit tests** (total: 25) covering battery health calculation and label thresholds.
+- GitHub issue templates and pull request template (from `v1.2.0`).
+
+### Notes
+- Battery health is queried once per app session (it changes very slowly). Some laptops do not report this data; in that case the UI shows "Battery health: Unavailable".
+
 ## [1.3.0] - 2026-09-23
 
 ### Added
