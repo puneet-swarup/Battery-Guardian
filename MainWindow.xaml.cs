@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Win32;
+using System.Reflection;
 
 namespace BatteryGuardian
 {
@@ -51,6 +52,8 @@ namespace BatteryGuardian
         private bool _lowAlertActive;
         private bool _isExiting;
         private string _currentAlertMessage = "";
+        private readonly UpdateService _updateService = new();
+        private bool _updateCheckInProgress;
 
         public MainWindow()
         {
@@ -138,12 +141,90 @@ namespace BatteryGuardian
 
             contextMenu.Items.Add(new System.Windows.Controls.Separator());
 
+            var updateItem = new System.Windows.Controls.MenuItem { Header = "Check for Updates" };
+            updateItem.Click += async (s, e) => await CheckForUpdatesAsync(manualCheck: true);
+            contextMenu.Items.Add(updateItem);
+
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
             var exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
             exitItem.Click += (s, e) => { _isExiting = true; Close(); };
             contextMenu.Items.Add(exitItem);
 
             _notifyIcon.ContextMenu = contextMenu;
             _notifyIcon.TrayMouseDoubleClick += (s, e) => RestoreWindow();
+        }
+
+        private async Task CheckForUpdatesAsync(bool manualCheck)
+        {
+            if (_updateCheckInProgress) return;
+            _updateCheckInProgress = true;
+
+            try
+            {
+                if (!manualCheck)
+                {
+                    if (!_settings.CheckForUpdatesAutomatically) return;
+
+                    if (_settings.LastUpdateCheckUtc.HasValue &&
+                        (DateTime.UtcNow - _settings.LastUpdateCheckUtc.Value).TotalHours < 24)
+                    {
+                        return;
+                    }
+                }
+
+                Version? currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                if (currentVersion == null) return;
+
+                UpdateInfo? update = await _updateService.CheckForUpdateAsync(currentVersion);
+
+                _settings.LastUpdateCheckUtc = DateTime.UtcNow;
+                SaveSettings(_settings);
+
+                if (update != null)
+                {
+                    var result = System.Windows.MessageBox.Show(
+                        $"A new version of Battery Guardian is available.\n\n" +
+                        $"Current: {currentVersion}\n" +
+                        $"Latest:  {update.LatestVersion}\n\n" +
+                        $"Open the download page?",
+                        "Update Available",
+                        System.Windows.MessageBoxButton.YesNo,
+                        System.Windows.MessageBoxImage.Information);
+
+                    if (result == System.Windows.MessageBoxResult.Yes && !string.IsNullOrEmpty(update.ReleaseUrl))
+
+                        if (result == MessageBoxResult.Yes && !string.IsNullOrEmpty(update.ReleaseUrl))
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = update.ReleaseUrl,
+                            UseShellExecute = true
+                        });
+                    }
+                }
+                else if (manualCheck)
+                {
+                    System.Windows.MessageBox.Show("You are already running the latest version.",
+                        "No Updates",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch
+            {
+                if (manualCheck)
+                {
+                    System.Windows.MessageBox.Show("Could not check for updates right now. Please try again later.",
+                        "Update Check Failed",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+            finally
+            {
+                _updateCheckInProgress = false;
+            }
         }
 
         private void RestoreWindow()
@@ -169,6 +250,7 @@ namespace BatteryGuardian
             LoadBatteryHealth();
             RefreshBatteryStatus();
             _refreshTimer.Start();
+            _ = CheckForUpdatesAsync(manualCheck: false);
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)

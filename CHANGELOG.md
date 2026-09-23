@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-09-24
+
+### Added
+- **Automatic update check**: On startup (once every 24 hours), the app queries GitHub Releases for a newer version. If one is available, a dialog offers to open the download page in the default browser.
+- **Manual "Check for Updates"** in the tray right-click menu, for on-demand checks.
+- **Automatic versioning via MinVer**: The app's version number is now derived from Git tags — no more manual editing in the `.csproj`.
+- **11 new unit tests** for version parsing and comparison (total: 41).
+
+### Changed
+- Settings window now has a "Check for updates automatically" checkbox (default: enabled).
+
+### Notes
+- The update check is fully silent if the network is down or GitHub is unreachable — it never interferes with normal use.
+- Rate-limited by GitHub to 60 requests/hour per IP; we throttle to 1 automatic check per 24 hours.
+
 ## [1.8.0] - 2026-09-23
 
 ### Added
