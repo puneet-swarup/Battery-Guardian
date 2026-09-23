@@ -13,24 +13,24 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v5
-    
+
     - name: Setup .NET 10
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.x'
-        
+
     - name: Restore dependencies
       run: dotnet restore
-      
+
     - name: Build
       run: dotnet build -c Release --no-restore
-      
+
     - name: Run Tests
       run: dotnet test -c Release --no-build --verbosity normal
 
     - name: Publish (Self-Contained x64 Executable)
-      run: dotnet publish -c Release -r win-x64 --self-contained true -o PublishOutput --no-build
-      
+      run: dotnet publish BatteryGuardian.csproj -c Release -r win-x64 --self-contained true -o PublishOutput
+
     - name: Upload EXE Artifact
       uses: actions/upload-artifact@v5
       with:
@@ -42,21 +42,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # Only runs when a tag is pushed (e.g., v1.0.0)
     if: startsWith(github.ref, 'refs/tags/')
-    
+
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: BatteryGuardian-x64-Release
           path: ./artifact
-          
+
       - name: Zip the folder
         run: |
           cd artifact
           zip -r ../BatteryGuardian-x64-Release.zip .
-          
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
