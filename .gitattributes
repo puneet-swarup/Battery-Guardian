@@ -8,3 +8,6 @@
 # Binary files (images, etc.)
 *.png binary
 *.ico binary
+
+*.ps1 text eol=crlf
+*.bat text eol=crlf

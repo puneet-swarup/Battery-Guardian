@@ -44,19 +44,28 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 
 ---
 
-## 🚀 Installation (Build from Source)
+## 🚀 Installation
 
-Since this repository does not include an installer, you need to compile the application yourself. It's quick and easy:
+1. Download the latest `BatteryGuardian-x64-Release.zip` from the [Releases page](https://github.com/puneet-swarup/Battery-Guardian/releases/latest).
+2. Extract the ZIP to any folder.
+3. Double-click **`install.bat`**.
+4. The app installs to `%LocalAppData%\Programs\BatteryGuardian\` and appears in your Start Menu and Settings → Apps.
 
-1. **Clone the repository** to your local machine using Git or download the ZIP:
+**To uninstall:** Open **Settings → Apps → Installed apps**, search for **Battery Guardian**, and click **Uninstall**. Or run `uninstall.bat` from the install folder.
+
+No admin rights required. No system-wide changes — all files stay under your user profile.
+
+### Build from Source
+
+If you'd rather build from source:
+
+1. Clone the repo:
    ```cmd
    git clone https://github.com/puneet-swarup/Battery-Guardian.git
    ```
-2. **Open the solution**: Navigate to the cloned folder and double-click BatteryGuardian.sln to open it in Visual Studio 2022.
+2. Open BatteryGuardian.sln in Visual Studio 2022.
 
-3. **Restore NuGet Packages**: Visual Studio will automatically restore the System.Speech dependency. If it doesn't, right-click the solution in the Solution Explorer and select Restore NuGet Packages.
-
-4. **Build and Run**: Press F5 to compile and run the app.
+3. Restore NuGet packages, then press F5.
 
 --- 
 ## 📖 How to Use

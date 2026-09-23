@@ -30,6 +30,10 @@ jobs:
 
     - name: Publish (Self-Contained x64 Executable)
       run: dotnet publish BatteryGuardian.csproj -c Release -r win-x64 --self-contained true -o PublishOutput
+      
+    - name: Copy installer scripts into publish output
+      run: |
+        Copy-Item install.bat,install.ps1,uninstall.bat,uninstall.ps1 PublishOutput\ -Force
 
     - name: Upload EXE Artifact
       uses: actions/upload-artifact@v5
@@ -46,7 +50,7 @@ jobs:
 
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: BatteryGuardian-x64-Release
           path: ./artifact

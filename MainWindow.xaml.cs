@@ -79,23 +79,42 @@ namespace BatteryGuardian
                 ToolTipText = "Battery Guardian"
             };
 
+            // Try three strategies to load the battery icon, in order of reliability.
+            System.Drawing.Icon? loadedIcon = null;
+
+            // Strategy 1: extract the icon embedded in the exe (ApplicationIcon).
+            // Works in debug and self-contained single-file publishes.
             try
             {
-                var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute);
-                var streamInfo = System.Windows.Application.GetResourceStream(iconUri);
-                if (streamInfo != null)
+                string? exePath = Environment.ProcessPath;
+                if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
                 {
-                    using (var stream = streamInfo.Stream)
-                    using (var tempIcon = new System.Drawing.Icon(stream))
-                    {
-                        _notifyIcon.Icon = (System.Drawing.Icon)tempIcon.Clone();
-                    }
+                    loadedIcon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
                 }
             }
-            catch
+            catch { /* fall through */ }
+
+            // Strategy 2: load from the embedded WPF pack resource.
+            if (loadedIcon == null)
             {
-                _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+                try
+                {
+                    var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute);
+                    var streamInfo = System.Windows.Application.GetResourceStream(iconUri);
+                    if (streamInfo != null)
+                    {
+                        using (var stream = streamInfo.Stream)
+                        using (var tempIcon = new System.Drawing.Icon(stream))
+                        {
+                            loadedIcon = (System.Drawing.Icon)tempIcon.Clone();
+                        }
+                    }
+                }
+                catch { /* fall through */ }
             }
+
+            // Strategy 3: fall back to the generic Windows application icon.
+            _notifyIcon.Icon = loadedIcon ?? System.Drawing.SystemIcons.Application;
 
             var contextMenu = new System.Windows.Controls.ContextMenu();
 

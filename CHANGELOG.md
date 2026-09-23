@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-09-23
+
+### Added
+- **Installer scripts** (`install.bat` / `install.ps1` / `uninstall.bat` / `uninstall.ps1`) for a proper per-user installation experience. Users extract the release ZIP and double-click `install.bat`. Files install to `%LocalAppData%\Programs\BatteryGuardian\`, a Start Menu shortcut is created, and the app appears in **Settings → Apps** for clean uninstall.
+
+### Changed
+- **Published build is now a folder, not a single file.** Removed `<PublishSingleFile>true</PublishSingleFile>` from the project file. This fixes the `System.DllNotFoundException` crash (`0xC000041D`) that occurred when running the single-file EXE from a user-profile install location (a known .NET/WPF issue where native WPF DLLs cannot be extracted from the bundle in certain paths).
+
+### Removed
+- The abandoned WiX Toolset MSI approach — validation errors (ICE38/43/57/64) and the resulting `setup.bat` detour were not worth the complexity for a small utility.
+
+### Notes
+- The install/uninstall scripts write only to `HKCU` and `%LocalAppData%` — no admin rights required.
+- The release ZIP now contains ~200 files (folder publish) instead of a single EXE. This is the same approach used by VS Code, Discord, and most modern Windows apps.
+
 ## [1.7.1] - 2026-09-23
 
 ### Removed
