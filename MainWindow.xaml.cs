@@ -47,7 +47,6 @@ namespace BatteryGuardian
 
         // CHANGED: TaskbarIcon instead of WinForms.NotifyIcon
         private TaskbarIcon _notifyIcon = null!;
-
         private bool _highAlertActive;
         private bool _lowAlertActive;
         private bool _isExiting;
@@ -80,7 +79,6 @@ namespace BatteryGuardian
                 ToolTipText = "Battery Guardian"
             };
 
-            // Load the .ico from the embedded WPF resource
             try
             {
                 var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute);
@@ -88,14 +86,14 @@ namespace BatteryGuardian
                 if (streamInfo != null)
                 {
                     using (var stream = streamInfo.Stream)
+                    using (var tempIcon = new System.Drawing.Icon(stream))
                     {
-                        _notifyIcon.Icon = new System.Drawing.Icon(stream);
+                        _notifyIcon.Icon = (System.Drawing.Icon)tempIcon.Clone();
                     }
                 }
             }
             catch
             {
-                // If we can't load the icon, fall back to the system icon
                 _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
             }
 
@@ -160,6 +158,7 @@ namespace BatteryGuardian
             _alarmTimer.Stop();
             _notifyIcon?.Dispose();
             _speechSynthesizer.Dispose();
+            // Do NOT dispose _warningIcon — it's a shared system icon.
         }
 
         private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshBatteryStatus();
