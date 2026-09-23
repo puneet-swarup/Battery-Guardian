@@ -253,6 +253,7 @@ namespace BatteryGuardian
             {
                 BatteryPercentageText.Text = "Battery: N/A";
                 ChargingStatusText.Text = "Status: Unable to read power status";
+                EstimatedTimeText.Text = "";
                 LastUpdatedText.Text = $"Last updated: {DateTime.Now:T}";
                 return;
             }
@@ -274,14 +275,77 @@ namespace BatteryGuardian
             ChargingStatusText.Text = statusText;
             LastUpdatedText.Text = $"Last updated: {DateTime.Now:T}";
 
+            // NEW: Estimated time display
+            EstimatedTimeText.Text = BuildEstimatedTimeText(status, isOnAcPower, isCharging);
+
             if (status.BatteryLifePercent != BATTERY_PERCENT_UNKNOWN)
             {
                 UpdateTrayIcon(status.BatteryLifePercent);
-                _notifyIcon.Text = $"Battery Guardian - {status.BatteryLifePercent}% ({(isCharging ? "Charging" : "Not Charging")})";
 
-                // <-- CHANGED: Pass isOnAcPower
+                // NEW: Enhanced tooltip
+                string chargeWord = isCharging ? "Charging" : (isOnAcPower ? "Plugged In" : "Not Charging");
+                string timeHint = "";
+                if (!isOnAcPower)
+                {
+                    string remaining = FormatTimeSpan(status.BatteryLifeTime);
+                    if (!string.IsNullOrEmpty(remaining)) timeHint = $" ~{remaining} left";
+                }
+                else if (isCharging)
+                {
+                    string toFull = FormatTimeSpan(status.BatteryFullLifeTime);
+                    if (!string.IsNullOrEmpty(toFull)) timeHint = $" ~{toFull} to full";
+                }
+
+                // NotifyIcon.Text has a 63-character limit on Windows, so keep it short.
+                string tooltip = $"Battery Guardian - {status.BatteryLifePercent}% ({chargeWord}){timeHint}";
+                if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 60) + "...";
+                _notifyIcon.Text = tooltip;
+
                 EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
             }
+            else
+            {
+                EstimatedTimeText.Text = "";
+            }
+        }
+
+        /// <summary>
+        /// Formats a duration (in seconds) as a human-readable string like "2h 15m" or "45m".
+        /// Returns an empty string if the value is unknown (0 or uint.MaxValue) or unreasonable.
+        /// </summary>
+        private string FormatTimeSpan(uint seconds)
+        {
+            // Windows returns 0 or uint.MaxValue when the value is unknown or on AC power.
+            if (seconds == 0 || seconds == uint.MaxValue) return "";
+
+            // Sanity check: > 100 hours is almost certainly bogus.
+            if (seconds > 360_000) return "";
+
+            var ts = TimeSpan.FromSeconds(seconds);
+            if (ts.TotalHours >= 1)
+                return $"{(int)ts.TotalHours}h {ts.Minutes}m";
+            return $"{ts.Minutes}m";
+        }
+
+        /// <summary>
+        /// Builds the text shown in the EstimatedTimeText TextBlock based on the current power state.
+        /// </summary>
+        private string BuildEstimatedTimeText(SYSTEM_POWER_STATUS status, bool isOnAcPower, bool isCharging)
+        {
+            if (isCharging)
+            {
+                string toFull = FormatTimeSpan(status.BatteryFullLifeTime);
+                return string.IsNullOrEmpty(toFull) ? "Time to full: Calculating..." : $"Time to full: {toFull}";
+            }
+
+            if (isOnAcPower)
+            {
+                // Plugged in but not actively charging - OS rarely reports useful time here.
+                return "";
+            }
+
+            string remaining = FormatTimeSpan(status.BatteryLifeTime);
+            return string.IsNullOrEmpty(remaining) ? "Time remaining: Calculating..." : $"Time remaining: {remaining}";
         }
 
         // <-- CHANGED: Now takes isOnAcPower as third parameter

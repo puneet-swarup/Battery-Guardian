@@ -4,7 +4,7 @@
         Title="Battery Guardian"
         Height="Auto"
         Width="360"
-        MinHeight="220"
+        MinHeight="240"
         MinWidth="360"
         SizeToContent="Height"
         ResizeMode="CanMinimize"
@@ -13,6 +13,7 @@
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -44,15 +45,24 @@
                    Foreground="#333333"
                    Margin="0,0,0,10"/>
 
-        <TextBlock x:Name="LastUpdatedText"
+        <!-- NEW: Estimated time -->
+        <TextBlock x:Name="EstimatedTimeText"
                    Grid.Row="3"
+                   Text=""
+                   FontSize="14"
+                   HorizontalAlignment="Center"
+                   Foreground="#555555"
+                   Margin="0,0,0,10"/>
+
+        <TextBlock x:Name="LastUpdatedText"
+                   Grid.Row="4"
                    Text="Last updated: --"
                    FontSize="12"
                    HorizontalAlignment="Center"
                    Foreground="#777777"
                    Margin="0,0,0,10"/>
 
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center">
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button x:Name="RefreshButton"
                     Content="Refresh Now"
                     Width="130"
