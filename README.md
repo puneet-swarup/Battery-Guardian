@@ -30,8 +30,7 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 - **Auto-Stop**: The alert stops **immediately** when you plug in/unplug the charger, even if the battery percentage hasn't crossed the threshold yet.
 - **Voice Notifications**: Uses Windows built-in Text-to-Speech for clear audio alerts.
 - **Native Windows Toasts**: Alerts appear as real Windows 10/11 Action Center notifications (the same style as Outlook/Teams). They persist in the Action Center so you don't miss them.
-- **Dynamic System Tray Icon**: The tray icon visually updates to show your battery level (Green for high, Orange for medium, Red for low), and the tooltip shows percentage and charging status at a glance.
-- **Fully Configurable**: Customize the High threshold, Low threshold, and Repeat interval via the Settings window.
+- **System Tray Icon**: Uses the battery-themed application icon; tooltip shows current percentage and charging status.- **Fully Configurable**: Customize the High threshold, Low threshold, and Repeat interval via the Settings window.
 - **Auto-Start**: Registers itself to launch automatically when you sign into Windows (on first run).
 - **Battery Health**: Displays the current full-charge capacity vs. original design capacity (wear level), when the laptop reports it.
 - **Native app icon** — battery-themed icon across the window, taskbar, and .exe.

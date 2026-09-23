@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-09-23
+
+### Changed
+- **Tray icon library replaced**: migrated from the raw `WinForms.NotifyIcon` to [Hardcodet.NotifyIcon.Wpf](https://github.com/hardcodet/wpf-notifyicon) — a mature, WPF-native library that correctly manages Windows icon handles.
+- The tray icon now uses the battery-themed `Assets/app.ico` file instead of the generic Windows application icon.
+
+### Removed
+- Deleted the manual GDI bitmap-drawing code that was used to render a colored battery icon dynamically (`UpdateTrayIcon` is now a no-op).
+
+### Notes
+- This is Stage A of the tray icon modernization. Stage B (optional blinking during alerts) is planned as a follow-up release.
+- Hardcodet correctly handles icon lifetime, so the `0xc000041d` GDI crash we hit in earlier sprints cannot recur.
+
 ## [1.6.0] - 2026-09-23
 
 ### Added

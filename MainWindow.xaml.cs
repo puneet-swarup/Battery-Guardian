@@ -1,17 +1,15 @@
 using System;
-
-using System.Speech.Synthesis;
 using System.ComponentModel;
-using System.Drawing;
 using System.IO;
-using System.Management; // NEW: For WMI fallback
+using System.Management;
 using System.Media;
 using System.Runtime.InteropServices;
+using System.Speech.Synthesis;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
+using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Win32;
-using WinForms = System.Windows.Forms;
 
 namespace BatteryGuardian
 {
@@ -21,6 +19,9 @@ namespace BatteryGuardian
         private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS lpSystemPowerStatus);
 
         private readonly SpeechSynthesizer _speechSynthesizer;
+        private readonly BatteryAlertEvaluator _evaluator = new();
+        private readonly BatteryHealthService _healthService = new();
+        private readonly ToastService _toastService = new();
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_POWER_STATUS
@@ -39,21 +40,18 @@ namespace BatteryGuardian
         private const byte BATTERY_PERCENT_UNKNOWN = 255;
 
         private Settings _settings = null!;
-        private Bitmap? _trayIconBitmap;
+        private BatteryHealthInfo? _batteryHealth;
 
         private readonly DispatcherTimer _refreshTimer;
         private readonly DispatcherTimer _alarmTimer;
 
-        private WinForms.NotifyIcon _notifyIcon = null!;
+        // CHANGED: TaskbarIcon instead of WinForms.NotifyIcon
+        private TaskbarIcon _notifyIcon = null!;
 
         private bool _highAlertActive;
         private bool _lowAlertActive;
         private bool _isExiting;
         private string _currentAlertMessage = "";
-        private readonly BatteryAlertEvaluator _evaluator = new();
-        private readonly BatteryHealthService _healthService = new();
-        private BatteryHealthInfo? _batteryHealth;
-        private readonly ToastService _toastService = new();
 
         public MainWindow()
         {
@@ -73,55 +71,62 @@ namespace BatteryGuardian
             Closing += MainWindow_Closing;
             Closed += MainWindow_Closed;
             StateChanged += MainWindow_StateChanged;
-            // Continuously follow Windows theme changes (light/dark) in real time.
         }
 
         private void InitializeTrayIcon()
         {
-            var contextMenu = new WinForms.ContextMenuStrip();
-            contextMenu.Items.Add("Open", null, (s, e) => RestoreWindow());
-            contextMenu.Items.Add("Settings", null, (s, e) => OpenSettingsWindow());
-            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
-            contextMenu.Items.Add("Test High Alert", null, (s, e) => TriggerTestAlert(high: true));
-            contextMenu.Items.Add("Test Low Alert", null, (s, e) => TriggerTestAlert(high: false));
-            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
-            contextMenu.Items.Add("Exit", null, ExitMenuItem_Click);
-
-            _notifyIcon = new WinForms.NotifyIcon
+            _notifyIcon = new TaskbarIcon
             {
-                Icon = SystemIcons.Application,
-                Text = "Battery Guardian",
-                Visible = true,
-                ContextMenuStrip = contextMenu
+                ToolTipText = "Battery Guardian"
             };
-            _notifyIcon.DoubleClick += (s, e) => RestoreWindow();
-        }
 
-        private void TriggerTestAlert(bool high)
-        {
-            // Simulate the alert firing, regardless of current battery state.
-            if (high)
+            // Load the .ico from the embedded WPF resource
+            try
             {
-                _highAlertActive = false;
-                string message = $"TEST: Battery is at {_settings.HighBatteryThreshold}%. Consider unplugging the charger.";
-                _currentAlertMessage = message;
-                ShowToastNotification("Battery Guardian (Test)", message);
-                SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync(message);
-                _highAlertActive = true;
-                StartAlarmTimerIfNeeded(forceRestart: true);
+                var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute);
+                var streamInfo = System.Windows.Application.GetResourceStream(iconUri);
+                if (streamInfo != null)
+                {
+                    using (var stream = streamInfo.Stream)
+                    {
+                        _notifyIcon.Icon = new System.Drawing.Icon(stream);
+                    }
+                }
             }
-            else
+            catch
             {
-                _lowAlertActive = false;
-                string message = $"TEST: Battery is low at {_settings.LowBatteryThreshold}%. Please connect the charger.";
-                _currentAlertMessage = message;
-                ShowToastNotification("Battery Guardian (Test)", message);
-                SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync(message);
-                _lowAlertActive = true;
-                StartAlarmTimerIfNeeded(forceRestart: true);
+                // If we can't load the icon, fall back to the system icon
+                _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
             }
+
+            var contextMenu = new System.Windows.Controls.ContextMenu();
+
+            var openItem = new System.Windows.Controls.MenuItem { Header = "Open" };
+            openItem.Click += (s, e) => RestoreWindow();
+            contextMenu.Items.Add(openItem);
+
+            var settingsItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
+            settingsItem.Click += (s, e) => OpenSettingsWindow();
+            contextMenu.Items.Add(settingsItem);
+
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
+            var testHighItem = new System.Windows.Controls.MenuItem { Header = "Test High Alert" };
+            testHighItem.Click += (s, e) => TriggerTestAlert(high: true);
+            contextMenu.Items.Add(testHighItem);
+
+            var testLowItem = new System.Windows.Controls.MenuItem { Header = "Test Low Alert" };
+            testLowItem.Click += (s, e) => TriggerTestAlert(high: false);
+            contextMenu.Items.Add(testLowItem);
+
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
+            var exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
+            exitItem.Click += (s, e) => { _isExiting = true; Close(); };
+            contextMenu.Items.Add(exitItem);
+
+            _notifyIcon.ContextMenu = contextMenu;
+            _notifyIcon.TrayMouseDoubleClick += (s, e) => RestoreWindow();
         }
 
         private void RestoreWindow()
@@ -129,12 +134,6 @@ namespace BatteryGuardian
             Show();
             WindowState = WindowState.Normal;
             Activate();
-        }
-
-        private void ExitMenuItem_Click(object? sender, EventArgs e)
-        {
-            _isExiting = true;
-            Close();
         }
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
@@ -159,9 +158,7 @@ namespace BatteryGuardian
         {
             _refreshTimer.Stop();
             _alarmTimer.Stop();
-            _notifyIcon.Visible = false;
-            _notifyIcon.Dispose();
-            _trayIconBitmap?.Dispose();
+            _notifyIcon?.Dispose();
             _speechSynthesizer.Dispose();
         }
 
@@ -171,7 +168,6 @@ namespace BatteryGuardian
         {
             if (_highAlertActive || _lowAlertActive)
             {
-                // Repeat the FULL alert: native toast + beep + voice.
                 if (!string.IsNullOrEmpty(_currentAlertMessage))
                 {
                     ShowToastNotification("Battery Guardian (Reminder)", _currentAlertMessage);
@@ -189,6 +185,32 @@ namespace BatteryGuardian
         private void RefreshButton_Click(object sender, RoutedEventArgs e) => RefreshBatteryStatus();
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettingsWindow();
+
+        private void TriggerTestAlert(bool high)
+        {
+            if (high)
+            {
+                _highAlertActive = false;
+                string message = $"TEST: Battery is at {_settings.HighBatteryThreshold}%. Consider unplugging the charger.";
+                _currentAlertMessage = message;
+                ShowToastNotification("Battery Guardian (Test)", message);
+                SystemSounds.Beep.Play();
+                _speechSynthesizer.SpeakAsync(message);
+                _highAlertActive = true;
+                StartAlarmTimerIfNeeded(forceRestart: true);
+            }
+            else
+            {
+                _lowAlertActive = false;
+                string message = $"TEST: Battery is low at {_settings.LowBatteryThreshold}%. Please connect the charger.";
+                _currentAlertMessage = message;
+                ShowToastNotification("Battery Guardian (Test)", message);
+                SystemSounds.Beep.Play();
+                _speechSynthesizer.SpeakAsync(message);
+                _lowAlertActive = true;
+                StartAlarmTimerIfNeeded(forceRestart: true);
+            }
+        }
 
         // ------- Settings & Startup Logic -------
 
@@ -223,11 +245,7 @@ namespace BatteryGuardian
 
         private void OpenSettingsWindow()
         {
-            var settingsWindow = new SettingsWindow(_settings)
-            {
-                Owner = this   // NEW: makes the window center on the main window
-            };
-
+            var settingsWindow = new SettingsWindow(_settings) { Owner = this };
             if (settingsWindow.ShowDialog() == true)
             {
                 _settings = settingsWindow.Settings;
@@ -258,6 +276,8 @@ namespace BatteryGuardian
             catch { }
         }
 
+        // ------- Battery Health -------
+
         private void LoadBatteryHealth()
         {
             _batteryHealth = _healthService.GetBatteryHealth();
@@ -273,35 +293,12 @@ namespace BatteryGuardian
                 $"{_batteryHealth.FullChargeCapacityMwh:N0} / {_batteryHealth.DesignCapacityMwh:N0} mWh";
         }
 
-        // ------- Battery Logic & Tray Icon -------
+        // ------- Battery Logic -------
 
+        // CHANGED: no-op — we no longer draw the tray icon manually
         private void UpdateTrayIcon(int percentage)
         {
-            if (percentage < 0 || percentage > 100) return;
-
-            _trayIconBitmap?.Dispose();
-
-            _trayIconBitmap = new Bitmap(16, 16);
-            using (var g = Graphics.FromImage(_trayIconBitmap))
-            {
-                g.Clear(Color.Transparent);
-                g.DrawRectangle(Pens.Black, 0, 2, 12, 12);
-                g.FillRectangle(Brushes.Black, 13, 5, 2, 6);
-
-                Brush fillBrush;
-                if (percentage >= 60) fillBrush = Brushes.Green;
-                else if (percentage >= 30) fillBrush = Brushes.Orange;
-                else fillBrush = Brushes.Red;
-
-                int fillWidth = (int)(10 * percentage / 100.0);
-                if (fillWidth > 0) g.FillRectangle(fillBrush, 1, 3, fillWidth, 10);
-            }
-
-            IntPtr hIcon = _trayIconBitmap.GetHicon();
-            using (var tmpIcon = System.Drawing.Icon.FromHandle(hIcon))
-            {
-                _notifyIcon.Icon = (System.Drawing.Icon)tmpIcon.Clone();
-            }
+            // Stage A: static icon. Dynamic icons will be added in a later stage if desired.
         }
 
         private void RefreshBatteryStatus()
@@ -331,15 +328,11 @@ namespace BatteryGuardian
             BatteryPercentageText.Text = percentageText;
             ChargingStatusText.Text = statusText;
             LastUpdatedText.Text = $"Last updated: {DateTime.Now:T}";
-
-            // NEW: Hybrid estimated time (native first, then WMI fallback)
             EstimatedTimeText.Text = BuildEstimatedTimeText(status, isOnAcPower, isCharging);
 
             if (status.BatteryLifePercent != BATTERY_PERCENT_UNKNOWN)
             {
-                UpdateTrayIcon(status.BatteryLifePercent);
-
-                // Enhanced tooltip
+                // CHANGED: ToolTipText instead of Text
                 string chargeWord = isCharging ? "Charging" : (isOnAcPower ? "Plugged In" : "Not Charging");
                 string timeHint = "";
                 if (!isOnAcPower)
@@ -355,7 +348,7 @@ namespace BatteryGuardian
 
                 string tooltip = $"Battery Guardian - {status.BatteryLifePercent}% ({chargeWord}){timeHint}";
                 if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 60) + "...";
-                _notifyIcon.Text = tooltip;
+                _notifyIcon.ToolTipText = tooltip;
 
                 EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
             }
@@ -365,25 +358,15 @@ namespace BatteryGuardian
             }
         }
 
-        /// <summary>
-        /// Formats a duration (in seconds) as a human-readable string like "2h 15m" or "45m".
-        /// Returns an empty string if the value is unknown or unreasonable.
-        /// </summary>
         private string FormatTimeSpan(uint seconds)
         {
             if (seconds == 0 || seconds == uint.MaxValue) return "";
-            if (seconds > 360_000) return ""; // > 100 hours is bogus
-
+            if (seconds > 360_000) return "";
             var ts = TimeSpan.FromSeconds(seconds);
-            if (ts.TotalHours >= 1)
-                return $"{(int)ts.TotalHours}h {ts.Minutes}m";
+            if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours}h {ts.Minutes}m";
             return $"{ts.Minutes}m";
         }
 
-        /// <summary>
-        /// Queries WMI (Win32_Battery) for EstimatedRunTime (in minutes) when discharging.
-        /// Returns null if unavailable.
-        /// </summary>
         private uint? GetEstimatedRunTimeFromWmi()
         {
             try
@@ -393,44 +376,25 @@ namespace BatteryGuardian
                     foreach (ManagementObject queryObj in searcher.Get())
                     {
                         var runTime = (uint)queryObj["EstimatedRunTime"];
-                        // WMI returns 71582788 (max) or 0 when unknown; < 6000 minutes (100h) is sane.
-                        if (runTime > 0 && runTime < 6000)
-                        {
-                            return runTime;
-                        }
+                        if (runTime > 0 && runTime < 6000) return runTime;
                     }
                 }
             }
-            catch
-            {
-                // WMI might fail on some systems; ignore and fall back.
-            }
+            catch { }
             return null;
         }
 
-        /// <summary>
-        /// Returns the best available "time remaining" string for discharging,
-        /// trying the native API first, then WMI.
-        /// </summary>
         private string GetBestTimeRemaining(SYSTEM_POWER_STATUS status)
         {
-            // 1. Native API
             string native = FormatTimeSpan(status.BatteryLifeTime);
             if (!string.IsNullOrEmpty(native)) return native;
 
-            // 2. WMI fallback
             uint? wmiMinutes = GetEstimatedRunTimeFromWmi();
-            if (wmiMinutes.HasValue)
-            {
-                return FormatTimeSpan(wmiMinutes.Value * 60); // Convert minutes → seconds
-            }
+            if (wmiMinutes.HasValue) return FormatTimeSpan(wmiMinutes.Value * 60);
 
             return "";
         }
 
-        /// <summary>
-        /// Builds the text shown in the EstimatedTimeText TextBlock.
-        /// </summary>
         private string BuildEstimatedTimeText(SYSTEM_POWER_STATUS status, bool isOnAcPower, bool isCharging)
         {
             if (isCharging)
@@ -439,34 +403,24 @@ namespace BatteryGuardian
                 return string.IsNullOrEmpty(toFull) ? "Time to full: Calculating..." : $"Time to full: {toFull}";
             }
 
-            if (isOnAcPower)
-            {
-                return ""; // Plugged in but not charging – no useful estimate.
-            }
+            if (isOnAcPower) return "";
 
-            // Discharging: use hybrid approach
             string remaining = GetBestTimeRemaining(status);
-            return string.IsNullOrEmpty(remaining)
-                ? "Time remaining: Calculating..."
-                : $"Time remaining: {remaining}";
+            return string.IsNullOrEmpty(remaining) ? "Time remaining: Calculating..." : $"Time remaining: {remaining}";
         }
 
         private void EvaluateAlerts(int batteryPercent, bool isCharging, bool isOnAcPower)
         {
-            // Ask the pure evaluator what should happen right now.
             AlertState newState = _evaluator.Evaluate(
                 batteryPercent,
                 isOnAcPower,
                 _settings.HighBatteryThreshold,
                 _settings.LowBatteryThreshold);
 
-            // --- Handle the High alert transition ---
             if (newState.HighAlertShouldBeActive && !_highAlertActive)
             {
-                // Transition: INACTIVE -> ACTIVE. Fire the alert once.
                 _highAlertActive = true;
                 _currentAlertMessage = newState.HighAlertMessage;
-
                 ShowToastNotification("Battery Guardian", newState.HighAlertMessage);
                 SystemSounds.Beep.Play();
                 _speechSynthesizer.SpeakAsync(newState.HighAlertMessage);
@@ -474,18 +428,14 @@ namespace BatteryGuardian
             }
             else if (!newState.HighAlertShouldBeActive && _highAlertActive)
             {
-                // Transition: ACTIVE -> INACTIVE. Clear the alert.
                 _highAlertActive = false;
                 if (!_lowAlertActive) _currentAlertMessage = "";
             }
 
-            // --- Handle the Low alert transition ---
             if (newState.LowAlertShouldBeActive && !_lowAlertActive)
             {
-                // Transition: INACTIVE -> ACTIVE. Fire the alert once.
                 _lowAlertActive = true;
                 _currentAlertMessage = newState.LowAlertMessage;
-
                 ShowToastNotification("Battery Guardian", newState.LowAlertMessage);
                 SystemSounds.Beep.Play();
                 _speechSynthesizer.SpeakAsync(newState.LowAlertMessage);
@@ -493,15 +443,13 @@ namespace BatteryGuardian
             }
             else if (!newState.LowAlertShouldBeActive && _lowAlertActive)
             {
-                // Transition: ACTIVE -> INACTIVE. Clear the alert.
                 _lowAlertActive = false;
                 if (!_highAlertActive) _currentAlertMessage = "";
             }
 
-            // --- Manage the repeat reminder timer ---
             if (_highAlertActive || _lowAlertActive)
             {
-                StartAlarmTimerIfNeeded(forceRestart: true);
+                StartAlarmTimerIfNeeded();
             }
             else
             {
@@ -515,14 +463,10 @@ namespace BatteryGuardian
             _alarmTimer.Interval = TimeSpan.FromSeconds(_settings.AlertRepeatIntervalSeconds);
 
             if (forceRestart && _alarmTimer.IsEnabled)
-            {
                 _alarmTimer.Stop();
-            }
 
             if (!_alarmTimer.IsEnabled)
-            {
                 _alarmTimer.Start();
-            }
         }
 
         private void ShowToastNotification(string title, string message)
