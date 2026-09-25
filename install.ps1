@@ -10,6 +10,18 @@ Write-Host "[1] Source dir : $sourceDir"
 Write-Host "[2] Install dir: $installDir"
 Write-Host ""
 
+# Stop any running instance so we can safely overwrite files
+Write-Host "[2a] Stopping running instances..."
+$procs = Get-Process -Name 'BatteryGuardian' -ErrorAction SilentlyContinue
+if ($procs) {
+    $procs | Stop-Process -Force
+    Write-Host "    Stopped $($procs.Count) running instance(s)"
+    # Give Windows a moment to release file handles
+    Start-Sleep -Milliseconds 800
+} else {
+    Write-Host "    No running instance found"
+}
+
 # Create install directory
 if (-not (Test-Path $installDir)) {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
