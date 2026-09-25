@@ -18,6 +18,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -65,7 +66,18 @@
                   Content="Automatically check on startup"
                   Margin="0,0,0,20"/>
 
-        <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+        <TextBlock Grid.Row="4" Grid.Column="0"
+           Text="Diagnostics:"
+           VerticalAlignment="Center"
+           Foreground="#333333"
+           Margin="0,0,10,20"/>
+        <CheckBox x:Name="DiagnosticLoggingCheckBox"
+          Grid.Row="4" Grid.Column="1"
+          VerticalAlignment="Center"
+          Content="Enable diagnostic logging"
+          Margin="0,0,0,20"/>
+
+        <Button Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
                 Content="Save Settings"
                 Width="120" Height="32"
                 HorizontalAlignment="Center"

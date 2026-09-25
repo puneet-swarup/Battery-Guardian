@@ -65,6 +65,7 @@ namespace BatteryGuardian
 
             _alarmTimer = new DispatcherTimer();
             _alarmTimer.Tick += AlarmTimer_Tick;
+            DiagnosticLog.Write($"CTOR: _alarmTimer created. Initial interval={_alarmTimer.Interval}");
 
             LoadSettings();
             InitializeTrayIcon();
@@ -140,6 +141,21 @@ namespace BatteryGuardian
             contextMenu.Items.Add(testLowItem);
 
             contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
+            var diagItem = new System.Windows.Controls.MenuItem { Header = "Open Diagnostic Log" };
+            diagItem.Click += (s, e) =>
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = DiagnosticLog.GetLogPath(),
+                        UseShellExecute = true
+                    });
+                }
+                catch { }
+            };
+            contextMenu.Items.Add(diagItem);
 
             var updateItem = new System.Windows.Controls.MenuItem { Header = "Check for Updates" };
             updateItem.Click += async (s, e) => await CheckForUpdatesAsync(manualCheck: true);
@@ -246,6 +262,13 @@ namespace BatteryGuardian
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            DiagnosticLog.Enabled = _settings.DiagnosticLoggingEnabled;
+            if (DiagnosticLog.Enabled)
+            {
+                DiagnosticLog.Clear();
+                DiagnosticLog.Write("=== App STARTED ===");
+            }
+
             EnsureStartup();
             LoadBatteryHealth();
             RefreshBatteryStatus();
@@ -255,6 +278,8 @@ namespace BatteryGuardian
 
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
+            DiagnosticLog.Write("=== App CLOSED ===");
+
             _refreshTimer.Stop();
             _alarmTimer.Stop();
             _notifyIcon?.Dispose();
@@ -266,17 +291,52 @@ namespace BatteryGuardian
 
         private void AlarmTimer_Tick(object? sender, EventArgs e)
         {
+            DiagnosticLog.Write($"AlarmTimer_Tick FIRED. " +
+                                $"highActive={_highAlertActive}, lowActive={_lowAlertActive}, " +
+                                $"msg='{_currentAlertMessage}'");
+
             if (_highAlertActive || _lowAlertActive)
             {
                 if (!string.IsNullOrEmpty(_currentAlertMessage))
                 {
-                    ShowToastNotification("Battery Guardian (Reminder)", _currentAlertMessage);
-                    SystemSounds.Beep.Play();
-                    _speechSynthesizer.SpeakAsync(_currentAlertMessage);
+                    try
+                    {
+                        ShowToastNotification("Battery Guardian (Reminder)", _currentAlertMessage);
+                        DiagnosticLog.Write("AlarmTimer_Tick: toast shown");
+                    }
+                    catch (Exception ex)
+                    {
+                        DiagnosticLog.WriteException("AlarmTimer_Tick.ShowToastNotification", ex);
+                    }
+
+                    try
+                    {
+                        SystemSounds.Beep.Play();
+                        DiagnosticLog.Write("AlarmTimer_Tick: beep played");
+                    }
+                    catch (Exception ex)
+                    {
+                        DiagnosticLog.WriteException("AlarmTimer_Tick.Beep", ex);
+                    }
+
+                    try
+                    {
+                        _speechSynthesizer.SpeakAsync(_currentAlertMessage);
+                        DiagnosticLog.Write("AlarmTimer_Tick: speech queued");
+                    }
+                    catch (Exception ex)
+                    {
+                        DiagnosticLog.WriteException("AlarmTimer_Tick.Speak", ex);
+                    }
+                }
+                else
+                {
+                    DiagnosticLog.Write("AlarmTimer_Tick: alert active but message is EMPTY");
                 }
             }
             else
             {
+                DiagnosticLog.Write("AlarmTimer_Tick: no alert active, stopping timer");
                 _alarmTimer.Stop();
                 _currentAlertMessage = "";
             }
@@ -469,6 +529,7 @@ namespace BatteryGuardian
 
         private uint? GetEstimatedRunTimeFromWmi()
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 using (var searcher = new ManagementObjectSearcher("SELECT EstimatedRunTime FROM Win32_Battery"))
@@ -476,11 +537,19 @@ namespace BatteryGuardian
                     foreach (ManagementObject queryObj in searcher.Get())
                     {
                         var runTime = (uint)queryObj["EstimatedRunTime"];
-                        if (runTime > 0 && runTime < 6000) return runTime;
+                        if (runTime > 0 && runTime < 6000)
+                        {
+                            DiagnosticLog.Write($"WMI: returned {runTime} min in {sw.ElapsedMilliseconds}ms");
+                            return runTime;
+                        }
                     }
                 }
+                DiagnosticLog.Write($"WMI: no valid value in {sw.ElapsedMilliseconds}ms");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteException("GetEstimatedRunTimeFromWmi", ex);
+            }
             return null;
         }
 
@@ -511,6 +580,10 @@ namespace BatteryGuardian
 
         private void EvaluateAlerts(int batteryPercent, bool isCharging, bool isOnAcPower)
         {
+            DiagnosticLog.Write($"EvaluateAlerts: batteryPercent={batteryPercent}, " +
+                    $"isCharging={isCharging}, isOnAcPower={isOnAcPower}, " +
+                    $"highActive={_highAlertActive}, lowActive={_lowAlertActive}");
+
             AlertState newState = _evaluator.Evaluate(
                 batteryPercent,
                 isOnAcPower,
@@ -556,17 +629,26 @@ namespace BatteryGuardian
                 _alarmTimer.Stop();
                 _currentAlertMessage = "";
             }
+
+            DiagnosticLog.Write($"EvaluateAlerts END: highActive={_highAlertActive}, " +
+                    $"lowActive={_lowAlertActive}, timerEnabled={_alarmTimer.IsEnabled}");
         }
 
         private void StartAlarmTimerIfNeeded(bool forceRestart = false)
         {
-            _alarmTimer.Interval = TimeSpan.FromSeconds(_settings.AlertRepeatIntervalSeconds);
+            var desiredInterval = TimeSpan.FromSeconds(_settings.AlertRepeatIntervalSeconds);
 
-            if (forceRestart && _alarmTimer.IsEnabled)
-                _alarmTimer.Stop();
+            // If the timer is already running and we're not forcing a restart,
+            // do NOTHING. Setting .Interval on a running DispatcherTimer resets
+            // its countdown, which prevents long intervals from ever firing.
+            if (_alarmTimer.IsEnabled && !forceRestart)
+            {
+                return;
+            }
 
-            if (!_alarmTimer.IsEnabled)
-                _alarmTimer.Start();
+            _alarmTimer.Stop();
+            _alarmTimer.Interval = desiredInterval;
+            _alarmTimer.Start();
         }
 
         private void ShowToastNotification(string title, string message)

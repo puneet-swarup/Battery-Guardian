@@ -23,6 +23,7 @@ namespace BatteryGuardian
             LowThresholdBox.Text = Settings.LowBatteryThreshold.ToString();
             RepeatIntervalBox.Text = Settings.AlertRepeatIntervalSeconds.ToString();
             CheckForUpdatesCheckBox.IsChecked = Settings.CheckForUpdatesAutomatically;
+            DiagnosticLoggingCheckBox.IsChecked = Settings.DiagnosticLoggingEnabled;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -42,6 +43,7 @@ namespace BatteryGuardian
                 Settings.LowBatteryThreshold = low;
                 Settings.AlertRepeatIntervalSeconds = repeatSec;
                 Settings.CheckForUpdatesAutomatically = CheckForUpdatesCheckBox.IsChecked == true;
+                Settings.DiagnosticLoggingEnabled = DiagnosticLoggingCheckBox.IsChecked == true;
 
                 DialogResult = true;
                 Close();
