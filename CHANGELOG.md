@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-09-25
+
+### Added
+- **Snooze alerts**: right-click the tray icon and choose "Snooze 30 minutes" or "Snooze 1 hour". While snoozed, all alerts (toast, beep, speech, repeat timer) are silent. Alerts resume automatically when the snooze expires, or manually via "Resume Alerts".
+- The tray tooltip now shows remaining snooze time, e.g. `Battery Guardian - 32% (Not Charging) [Snoozed 24m]`.
+- The "Resume Alerts" menu item shows a live countdown.
+
+### Fixed
+- `install.ps1` now stops any running instance before copying files (fixes the "file is being used by another process" error during updates).
+
+### Notes
+- Snooze is currently tray-menu only. A snooze button inside the Windows toast is planned for a future release.
+
 ## [1.10.0] - 2026-09-24
 
 ### Added

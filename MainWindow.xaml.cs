@@ -54,6 +54,9 @@ namespace BatteryGuardian
         private string _currentAlertMessage = "";
         private readonly UpdateService _updateService = new();
         private bool _updateCheckInProgress;
+        private System.Windows.Controls.MenuItem? _snooze30Item;
+        private System.Windows.Controls.MenuItem? _snooze1hItem;
+        private System.Windows.Controls.MenuItem? _resumeAlertsItem;
 
         public MainWindow()
         {
@@ -157,6 +160,22 @@ namespace BatteryGuardian
             };
             contextMenu.Items.Add(diagItem);
 
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
+            _snooze30Item = new System.Windows.Controls.MenuItem { Header = "Snooze 30 minutes" };
+            _snooze30Item.Click += (s, e) => Snooze(TimeSpan.FromMinutes(30));
+            contextMenu.Items.Add(_snooze30Item);
+
+            _snooze1hItem = new System.Windows.Controls.MenuItem { Header = "Snooze 1 hour" };
+            _snooze1hItem.Click += (s, e) => Snooze(TimeSpan.FromHours(1));
+            contextMenu.Items.Add(_snooze1hItem);
+
+            _resumeAlertsItem = new System.Windows.Controls.MenuItem { Header = "Resume Alerts" };
+            _resumeAlertsItem.Click += (s, e) => CancelSnooze();
+            contextMenu.Items.Add(_resumeAlertsItem);
+
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
             var updateItem = new System.Windows.Controls.MenuItem { Header = "Check for Updates" };
             updateItem.Click += async (s, e) => await CheckForUpdatesAsync(manualCheck: true);
             contextMenu.Items.Add(updateItem);
@@ -169,6 +188,90 @@ namespace BatteryGuardian
 
             _notifyIcon.ContextMenu = contextMenu;
             _notifyIcon.TrayMouseDoubleClick += (s, e) => RestoreWindow();
+        }
+
+        /// <summary>
+        /// Returns true if the user has snoozed alerts and the snooze window is still active.
+        /// If the snooze has just expired, clears it and resets alert state so new alerts can fire.
+        /// </summary>
+        private bool IsSnoozed()
+        {
+            if (!_settings.SnoozedUntilUtc.HasValue) return false;
+
+            if (DateTime.UtcNow >= _settings.SnoozedUntilUtc.Value)
+            {
+                // Snooze expired — clear it, reset alert state, allow new alerts.
+                _settings.SnoozedUntilUtc = null;
+                SaveSettings(_settings);
+
+                _highAlertActive = false;
+                _lowAlertActive = false;
+                _currentAlertMessage = "";
+                _alarmTimer.Stop();
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Suppresses all alerts for the given duration and immediately silences any active alert.
+        /// </summary>
+        private void Snooze(TimeSpan duration)
+        {
+            _settings.SnoozedUntilUtc = DateTime.UtcNow.Add(duration);
+            SaveSettings(_settings);
+
+            // Immediately silence any active alert
+            _highAlertActive = false;
+            _lowAlertActive = false;
+            _currentAlertMessage = "";
+            _alarmTimer.Stop();
+
+            UpdateSnoozeMenuState();
+            RefreshBatteryStatus(); // refresh tooltip immediately
+        }
+
+        /// <summary>
+        /// Clears the snooze and allows alerts to fire on the next evaluation.
+        /// </summary>
+        private void CancelSnooze()
+        {
+            _settings.SnoozedUntilUtc = null;
+            SaveSettings(_settings);
+
+            _highAlertActive = false;
+            _lowAlertActive = false;
+
+            UpdateSnoozeMenuState();
+            RefreshBatteryStatus();
+        }
+
+        /// <summary>
+        /// Enables/disables the snooze/resume menu items based on the current state.
+        /// </summary>
+        private void UpdateSnoozeMenuState()
+        {
+            bool snoozed = _settings.SnoozedUntilUtc.HasValue &&
+                           DateTime.UtcNow < _settings.SnoozedUntilUtc.Value;
+
+            if (_snooze30Item != null) _snooze30Item.IsEnabled = !snoozed;
+            if (_snooze1hItem != null) _snooze1hItem.IsEnabled = !snoozed;
+
+            if (_resumeAlertsItem != null)
+            {
+                _resumeAlertsItem.IsEnabled = snoozed;
+                if (snoozed && _settings.SnoozedUntilUtc.HasValue)
+                {
+                    var remaining = _settings.SnoozedUntilUtc.Value - DateTime.UtcNow;
+                    int minutesLeft = Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes));
+                    _resumeAlertsItem.Header = $"Resume Alerts ({minutesLeft} min left)";
+                }
+                else
+                {
+                    _resumeAlertsItem.Header = "Resume Alerts";
+                }
+            }
         }
 
         private async Task CheckForUpdatesAsync(bool manualCheck)
@@ -274,6 +377,7 @@ namespace BatteryGuardian
             RefreshBatteryStatus();
             _refreshTimer.Start();
             _ = CheckForUpdatesAsync(manualCheck: false);
+            UpdateSnoozeMenuState();
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)
@@ -506,7 +610,15 @@ namespace BatteryGuardian
                     if (!string.IsNullOrEmpty(toFull)) timeHint = $" ~{toFull} to full";
                 }
 
-                string tooltip = $"Battery Guardian - {status.BatteryLifePercent}% ({chargeWord}){timeHint}";
+                string snoozeSuffix = "";
+                if (_settings.SnoozedUntilUtc.HasValue && DateTime.UtcNow < _settings.SnoozedUntilUtc.Value)
+                {
+                    var remaining = _settings.SnoozedUntilUtc.Value - DateTime.UtcNow;
+                    int minutesLeft = Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes));
+                    snoozeSuffix = $" [Snoozed {minutesLeft}m]";
+                }
+
+                string tooltip = $"Battery Guardian - {status.BatteryLifePercent}% ({chargeWord}){timeHint}{snoozeSuffix}";
                 if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 60) + "...";
                 _notifyIcon.ToolTipText = tooltip;
 
@@ -584,6 +696,13 @@ namespace BatteryGuardian
                     $"isCharging={isCharging}, isOnAcPower={isOnAcPower}, " +
                     $"highActive={_highAlertActive}, lowActive={_lowAlertActive}");
 
+            if (IsSnoozed())
+            {
+                // While snoozed, suppress all alerts. The tooltip still updates via RefreshBatteryStatus.
+                UpdateSnoozeMenuState();
+                return;
+            }
+
             AlertState newState = _evaluator.Evaluate(
                 batteryPercent,
                 isOnAcPower,
@@ -629,6 +748,8 @@ namespace BatteryGuardian
                 _alarmTimer.Stop();
                 _currentAlertMessage = "";
             }
+
+            UpdateSnoozeMenuState();
 
             DiagnosticLog.Write($"EvaluateAlerts END: highActive={_highAlertActive}, " +
                     $"lowActive={_lowAlertActive}, timerEnabled={_alarmTimer.IsEnabled}");

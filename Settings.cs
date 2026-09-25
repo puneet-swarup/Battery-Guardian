@@ -8,5 +8,6 @@
         public bool CheckForUpdatesAutomatically { get; set; } = true;
         public DateTime? LastUpdateCheckUtc { get; set; } = null;
         public bool DiagnosticLoggingEnabled { get; set; } = false;
+        public DateTime? SnoozedUntilUtc { get; set; } = null;
     }
 }

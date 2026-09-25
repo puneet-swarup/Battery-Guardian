@@ -35,6 +35,8 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 - **Battery Health**: Displays the current full-charge capacity vs. original design capacity (wear level), when the laptop reports it.
 - **Native app icon** — battery-themed icon across the window, taskbar, and .exe.
 - **Automatic Update Check**: Notifies you when a newer version is available and offers a one-click link to the download page.
+- **Snooze**: Temporarily silence alerts for 30 minutes or 1 hour. Useful during meetings or presentations. Alerts resume automatically when the snooze expires.
+- **Diagnostic logging**: Optional toggle in Settings for troubleshooting.
 ---
 
 ## 🛠️ Prerequisites
