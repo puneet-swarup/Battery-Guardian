@@ -1,0 +1,44 @@
+# Top-most EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# C# files
+[*.cs]
+indent_size = 4
+# Prefer modern C# style
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# XAML files
+[*.xaml]
+indent_size = 4
+
+# XML files (including .csproj)
+[*.{xml,csproj,wixproj,props,targets}]
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# YAML files (GitHub Actions)
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown files - trailing whitespace is significant (line breaks)
+[*.md]
+trim_trailing_whitespace = false
+
+# Batch and PowerShell scripts
+[*.{bat,ps1}]
+end_of_line = crlf
