@@ -176,6 +176,12 @@ namespace BatteryGuardian
 
             contextMenu.Items.Add(new System.Windows.Controls.Separator());
 
+            var aboutItem = new System.Windows.Controls.MenuItem { Header = "About Battery Guardian" };
+            aboutItem.Click += (s, e) => OpenAboutWindow();
+            contextMenu.Items.Add(aboutItem);
+            
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+
             var updateItem = new System.Windows.Controls.MenuItem { Header = "Check for Updates" };
             updateItem.Click += async (s, e) => await CheckForUpdatesAsync(manualCheck: true);
             contextMenu.Items.Add(updateItem);
@@ -188,6 +194,12 @@ namespace BatteryGuardian
 
             _notifyIcon.ContextMenu = contextMenu;
             _notifyIcon.TrayMouseDoubleClick += (s, e) => RestoreWindow();
+        }
+
+        private void OpenAboutWindow()
+        {
+            var about = new AboutWindow { Owner = this };
+            about.ShowDialog();
         }
 
         /// <summary>

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-09-25
+
+### Added
+- **Snooze alerts**: right-click the tray icon to snooze for 30 minutes or 1 hour. While snoozed, all alerts are silent. Alerts resume automatically when the snooze expires, or manually via "Resume Alerts".
+- **Tray tooltip** shows remaining snooze time, e.g. `Battery Guardian - 32% (Not Charging) [Snoozed 24m]`.
+- **Diagnostic logging** — optional toggle in Settings. When enabled, writes a detailed log to `%LocalAppData%\BatteryGuardian\diagnostic.log`, useful for troubleshooting.
+- **"Open Diagnostic Log"** tray menu item to open the log file directly.
+- Installer now stops any running instance before copying files, and relaunches the app after install completes.
+
+### Fixed
+- Reminder intervals longer than 30 seconds previously failed to fire (the timer's countdown was being reset by the periodic refresh cycle).
+
 ## [1.11.0] - 2026-09-25
 
 ### Added

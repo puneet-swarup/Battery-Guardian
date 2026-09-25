@@ -1,0 +1,94 @@
+<Window x:Class="BatteryGuardian.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="Assets/app.ico"
+        Title="About Battery Guardian"
+        Height="Auto"
+        Width="440"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Battery Guardian"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="#111111"
+                   Margin="0,0,0,6"/>
+
+        <TextBlock x:Name="VersionText"
+                   Grid.Row="1"
+                   FontSize="13"
+                   HorizontalAlignment="Center"
+                   Foreground="#555555"
+                   Margin="0,0,0,20"/>
+
+        <TextBlock Grid.Row="2"
+                   Text="A lightweight Windows utility that protects laptop battery health by alerting you when to plug in or unplug your charger."
+                   TextWrapping="Wrap"
+                   FontSize="13"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   Foreground="#333333"
+                   Margin="0,0,0,20"/>
+
+        <TextBlock x:Name="AuthorText"
+                   Grid.Row="3"
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Foreground="#555555"
+                   Margin="0,0,0,4"/>
+
+        <TextBlock x:Name="CopyrightText"
+                   Grid.Row="4"
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Foreground="#777777"
+                   Margin="0,0,0,20"/>
+
+        <TextBlock x:Name="LicenseText"
+                   Grid.Row="5"
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Foreground="#777777"
+                   Margin="0,0,0,20"/>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <Button x:Name="GitHubButton"
+                    Content="GitHub Repository"
+                    Width="140"
+                    Height="30"
+                    FontSize="12"
+                    Margin="0,0,8,0"
+                    Click="GitHubButton_Click"/>
+            <Button x:Name="ReleasesButton"
+                    Content="Latest Release"
+                    Width="140"
+                    Height="30"
+                    FontSize="12"
+                    Click="ReleasesButton_Click"/>
+        </StackPanel>
+
+        <Button Grid.Row="7"
+                Content="Close"
+                Width="100"
+                Height="30"
+                FontSize="13"
+                HorizontalAlignment="Center"
+                Click="CloseButton_Click"/>
+    </Grid>
+</Window>
