@@ -16,6 +16,20 @@ Lithium-ion batteries degrade fastest when kept at 100% charge for extended peri
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/main1.png" alt="Battery Guardian main window" width="380"/>
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/settings1.png" alt="Battery Guardian settings window" width="380"/>
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/menu1.png" alt="Battery Guardian menu popup" width="180"/>
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/noti1.png" alt="Native Windows toast notification" width="280"/>
+</p>
+
+---
+
 ## ✨ Features
 
 - **Real-time Monitoring**: Displays current battery percentage and charging status.
