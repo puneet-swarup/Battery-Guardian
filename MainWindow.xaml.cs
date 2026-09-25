@@ -304,7 +304,7 @@ namespace BatteryGuardian
                     }
                 }
 
-                Version? currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                Version? currentVersion = GetCurrentVersion();
                 if (currentVersion == null) return;
 
                 UpdateInfo? update = await _updateService.CheckForUpdateAsync(currentVersion);
@@ -356,6 +356,21 @@ namespace BatteryGuardian
             {
                 _updateCheckInProgress = false;
             }
+        }
+
+        private static Version? GetCurrentVersion()
+        {
+            try
+            {
+                var asm = System.Reflection.Assembly.GetExecutingAssembly();
+                var fileVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location).FileVersion;
+                if (!string.IsNullOrEmpty(fileVersion) && Version.TryParse(fileVersion, out var v))
+                    return v;
+            }
+            catch { }
+
+            // Fallback if FileVersionInfo fails
+            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         }
 
         private void RestoreWindow()

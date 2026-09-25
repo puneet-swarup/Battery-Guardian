@@ -12,6 +12,7 @@
 		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
 		<Platforms>AnyCPU</Platforms>
 		<ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
