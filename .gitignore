@@ -31,3 +31,19 @@ PublishOutput-FDD/
 
 # User settings (So each user gets their own default settings on first run)
 Settings.json
+# Android build outputs
+Android/.gradle/
+Android/build/
+Android/app/build/
+Android/local.properties
+Android/.idea/
+Android/.kotlin/
+*.apk
+*.aab
+
+# Android signing - never commit these
+*.jks
+*.keystore
+Android/keystore.properties
+
+.forge-permissions.json

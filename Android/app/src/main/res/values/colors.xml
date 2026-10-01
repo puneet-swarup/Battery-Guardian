@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_primary">#0F1720</color>
+    <color name="bg_secondary">#17212B</color>
+    <color name="bg_card">#1E2A38</color>
+    <color name="accent">#2ECC71</color>
+    <color name="accent_dark">#27AE60</color>
+    <color name="accent_warn">#F1C40F</color>
+    <color name="accent_danger">#E74C3C</color>
+    <color name="text_primary">#ECF0F1</color>
+    <color name="text_secondary">#9AA7B4</color>
+    <color name="divider">#26333F</color>
+    <!-- Dark text placed on top of the green accent (filled buttons). -->
+    <color name="on_accent">#0B1219</color>
+    <!-- Visible outline for outlined buttons. -->
+    <color name="button_outline">#4A5A6A</color>
+</resources>

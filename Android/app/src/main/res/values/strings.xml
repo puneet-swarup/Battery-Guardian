@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Battery Guardian</string>
+
+    <!-- Main screen -->
+    <string name="main_title">Battery Guardian</string>
+    <string name="main_subtitle">Protects your battery from high and low charge stress</string>
+    <string name="battery_level_label">Battery level</string>
+    <string name="battery_status_label">Status</string>
+    <string name="battery_health_label">Battery health</string>
+    <string name="battery_health_unavailable">Unavailable on this device</string>
+    <string name="design_capacity_label">Design capacity</string>
+    <string name="full_charge_capacity_label">Full-charge capacity</string>
+    <string name="monitoring_on">Monitoring active</string>
+    <string name="monitoring_off">Monitoring paused</string>
+    <string name="start_monitoring">Start monitoring</string>
+    <string name="stop_monitoring">Stop monitoring</string>
+    <string name="settings_button">Settings</string>
+    <string name="about_button">About</string>
+    <string name="exempt_battery_button">Disable battery optimisation</string>
+    <string name="snooze_button">Snooze alerts</string>
+    <string name="check_update_button">Check for updates</string>
+
+    <!-- Status / health labels -->
+    <string name="status_charging">Charging (plugged in)</string>
+    <string name="status_discharging">On battery</string>
+    <string name="status_full">Full</string>
+    <string name="status_not_charging">Plugged in, not charging</string>
+    <string name="status_unknown">Unknown</string>
+    <string name="health_good">Good</string>
+    <string name="health_fair">Fair</string>
+    <string name="health_poor">Poor</string>
+    <string name="health_unavailable">Unavailable</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_high_threshold_title">High battery threshold</string>
+    <string name="settings_high_threshold_summary">Warn when charge reaches this percent while plugged in</string>
+    <string name="settings_low_threshold_title">Low battery threshold</string>
+    <string name="settings_low_threshold_summary">Warn when charge drops to this percent on battery</string>
+    <string name="settings_repeat_interval_title">Alert repeat interval (seconds)</string>
+    <string name="settings_repeat_interval_summary">How often an unresolved alert is repeated</string>
+    <string name="settings_sound_title">Play sound</string>
+    <string name="settings_sound_summary">Beep when an alert fires</string>
+    <string name="settings_speech_title">Speak alert</string>
+    <string name="settings_speech_summary">Use text-to-speech to read the alert aloud</string>
+    <string name="settings_toast_title">Show notification</string>
+    <string name="settings_toast_summary">Post a notification when an alert fires</string>
+    <string name="settings_vibrate_title">Vibrate</string>
+    <string name="settings_vibrate_summary">Vibrate the device on alert</string>
+    <string name="settings_auto_update_title">Check for updates automatically</string>
+    <string name="settings_auto_update_summary">Query GitHub releases on launch and periodically</string>
+    <string name="settings_diagnostics_title">Diagnostic logging</string>
+    <string name="settings_diagnostics_summary">Write a diagnostic log to app storage</string>
+    <string name="settings_threshold_input_hint">Enter value</string>
+    <string name="settings_threshold_range_error">Value must be between %1$d and %2$d</string>
+    <string name="settings_threshold_conflict_error">High threshold must be greater than low threshold</string>
+    <string name="settings_threshold_unit_percent">%%</string>
+    <string name="settings_about_category">About</string>
+    <string name="settings_monitor_category">Monitoring</string>
+    <string name="settings_alerts_category">Alerts</string>
+    <string name="settings_updates_category">Updates</string>
+    <string name="settings_version_title">Version</string>
+
+    <!-- About screen -->
+    <string name="about_title">About</string>
+    <string name="about_body">Battery Guardian monitors your battery and warns you when you should unplug the charger at high charge or plug in at low charge. Keeping a lithium-ion battery away from prolonged 100%% and deep discharge extends its lifespan.</string>
+    <string name="about_version_fmt">Version %1$s (build %2$d)</string>
+    <string name="about_github">View on GitHub</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Battery alerts</string>
+    <string name="notification_channel_description">High and low battery warnings</string>
+    <string name="notification_channel_service_name">Monitoring service</string>
+    <string name="notification_channel_service_description">Keeps battery monitoring running in the background</string>
+    <string name="notification_title">Battery Guardian</string>
+    <string name="notification_service_title">Battery Guardian is monitoring</string>
+    <string name="notification_service_text_fmt">Battery at %1$d%% · %2$s</string>
+    <string name="notification_action_snooze">Snooze</string>
+    <string name="notification_action_stop">Stop</string>
+
+    <!-- Alert messages -->
+    <string name="alert_high_fmt">Battery is at %1$d%%. Consider unplugging the charger.</string>
+    <string name="alert_low_fmt">Battery is low at %1$d%%. Please connect the charger.</string>
+    <string name="alert_snoozed_fmt">Alerts snoozed for %1$d minutes</string>
+
+    <!-- Update -->
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_fmt">Version %1$s is available.</string>
+    <string name="update_up_to_date">You are running the latest version.</string>
+    <string name="update_check_failed">Could not check for updates.</string>
+    <string name="update_download_button">Download</string>
+    <string name="update_open_release_button">Open release page</string>
+
+    <!-- Generic -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="error_generic">Something went wrong.</string>
+</resources>

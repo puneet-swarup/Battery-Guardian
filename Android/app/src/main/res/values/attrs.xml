@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom attributes for the SliderInputPreference (slider + numeric input). -->
+    <declare-styleable name="SliderInputPreference">
+        <attr name="sliderMin" format="integer" />
+        <attr name="sliderMax" format="integer" />
+        <attr name="sliderSuffix" format="string" />
+    </declare-styleable>
+</resources>

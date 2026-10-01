@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.BatteryGuardian" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- colorPrimary drives Material button text/outline colour, so it MUST be a
+             bright, visible colour on our dark background. Previously it was a dark
+             surface (#17212B), which made buttons render dark-on-dark and invisible. -->
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorPrimaryVariant">@color/accent_dark</item>
+        <item name="colorPrimaryDark">@color/bg_primary</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Force dark surfaces so Material components render dark, not light. -->
+        <item name="colorSurface">@color/bg_card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        <!-- Text drawn on top of colorPrimary (filled buttons): dark for contrast on green. -->
+        <item name="colorOnPrimary">@color/on_accent</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorOnSecondary">@color/on_accent</item>
+        <item name="colorError">@color/accent_danger</item>
+        <item name="colorOnError">@color/text_primary</item>
+
+        <!-- Button styling: bright, clearly visible on the dark background. -->
+        <item name="materialButtonStyle">@style/Widget.BatteryGuardian.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.BatteryGuardian.Button.Outlined</item>
+
+        <!-- Dialogs (EditTextPreference, AlertDialog) use a dark, readable theme. -->
+        <item name="alertDialogTheme">@style/Theme.BatteryGuardian.Dialog</item>
+        <item name="materialAlertDialogTheme">@style/Theme.BatteryGuardian.Dialog</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+    </style>
+
+    <!-- Filled button: green background, dark text. -->
+    <style name="Widget.BatteryGuardian.Button" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/accent</item>
+        <item name="android:textColor">@color/on_accent</item>
+        <item name="iconTint">@color/on_accent</item>
+        <item name="rippleColor">@color/on_accent</item>
+    </style>
+
+    <!-- Outlined button: light text + visible outline on the dark background. -->
+    <style name="Widget.BatteryGuardian.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="strokeColor">@color/button_outline</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="iconTint">@color/text_primary</item>
+        <item name="rippleColor">@color/accent</item>
+    </style>
+
+    <!-- Text button: light text, no outline. -->
+    <style name="Widget.BatteryGuardian.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/accent</item>
+        <item name="rippleColor">@color/accent</item>
+    </style>
+
+    <!-- Dark dialog theme: dark background, light text, so input is clearly visible. -->
+    <style name="Theme.BatteryGuardian.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/bg_card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="android:background">@color/bg_card</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.BatteryGuardian.Button.Text</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.BatteryGuardian.Button.Text</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.BatteryGuardian.Button.Text</item>
+    </style>
+
+    <style name="Theme.BatteryGuardian.Settings" parent="Theme.BatteryGuardian">
+        <item name="android:windowBackground">@color/bg_primary</item>
+    </style>
+
+    <!-- Explicit colours for the preference EditText dialogs (time interval etc). -->
+    <style name="Theme.BatteryGuardian.PreferenceDialog" parent="Theme.BatteryGuardian.Dialog">
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+    </style>
+
+</resources>

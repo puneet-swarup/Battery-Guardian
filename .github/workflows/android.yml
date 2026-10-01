@@ -1,0 +1,117 @@
+name: Build and Publish Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Android
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        # fetch-depth 0 keeps tags available so the version derives correctly.
+        fetch-depth: 0
+
+    - name: Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        # No wrapper is committed, so install the exact Gradle version
+        # that matches the local toolchain and AGP 9.2.0.
+        gradle-version: '9.4.1'
+
+    - name: Install Android SDK components
+      run: |
+        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+    - name: Run unit tests with coverage
+      run: gradle testDebugUnitTest createDebugUnitTestCoverageReport --no-daemon
+
+    - name: Upload test report
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: BatteryGuardian-android-test-report
+        path: Android/app/build/reports/tests/testDebugUnitTest
+
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: BatteryGuardian-android-coverage
+        path: Android/app/build/reports/coverage/test/debug
+
+    - name: Build debug APK
+      run: gradle assembleDebug --no-daemon
+
+    - name: Upload debug APK
+      uses: actions/upload-artifact@v5
+      with:
+        name: BatteryGuardian-android-debug
+        path: Android/app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Decode release keystore
+      if: startsWith(github.ref, 'refs/tags/')
+      working-directory: Android
+      run: |
+        mkdir -p keystore
+        echo "${{ secrets.BG_KEYSTORE_BASE64 }}" | base64 -d > keystore/bg-release.jks
+
+    - name: Build release APK
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        BG_STORE_FILE: ${{ github.workspace }}/Android/keystore/bg-release.jks
+        BG_STORE_PASSWORD: ${{ secrets.BG_STORE_PASSWORD }}
+        BG_KEY_ALIAS: ${{ secrets.BG_KEY_ALIAS }}
+        BG_KEY_PASSWORD: ${{ secrets.BG_KEY_PASSWORD }}
+      run: gradle assembleRelease --no-daemon
+
+    - name: Upload release APK
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v5
+      with:
+        name: BatteryGuardian-android-release
+        path: Android/app/build/outputs/apk/release/app-release.apk
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Download release APK
+      uses: actions/download-artifact@v5
+      with:
+        name: BatteryGuardian-android-release
+        path: ./apk
+
+    - name: Prepare APK for release
+      run: |
+        mkdir -p out
+        cp apk/app-release.apk "out/BatteryGuardian-android-${{ github.ref_name }}.apk"
+
+    - name: Attach APK to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        files: out/BatteryGuardian-android-${{ github.ref_name }}.apk
+        draft: false
+        prerelease: false
+        generate_release_notes: false

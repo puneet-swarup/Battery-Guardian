@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/settings_alerts_category">
+
+        <!-- Slider + typed numeric entry for precise threshold selection. -->
+        <com.puneet.batteryguardian.ui.pref.SliderInputPreference
+            app:key="high_threshold"
+            app:title="@string/settings_high_threshold_title"
+            app:summary="@string/settings_high_threshold_summary"
+            app:defaultValue="95"
+            app:sliderMin="50"
+            app:sliderMax="100"
+            app:sliderSuffix="%" />
+
+        <com.puneet.batteryguardian.ui.pref.SliderInputPreference
+            app:key="low_threshold"
+            app:title="@string/settings_low_threshold_title"
+            app:summary="@string/settings_low_threshold_summary"
+            app:defaultValue="15"
+            app:sliderMin="5"
+            app:sliderMax="50"
+            app:sliderSuffix="%" />
+
+        <EditTextPreference
+            app:key="repeat_interval"
+            app:title="@string/settings_repeat_interval_title"
+            app:summary="@string/settings_repeat_interval_summary"
+            app:defaultValue="300"
+            app:dialogTitle="@string/settings_repeat_interval_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/settings_monitor_category">
+
+        <SwitchPreferenceCompat
+            app:key="play_sound"
+            app:title="@string/settings_sound_title"
+            app:summary="@string/settings_sound_summary"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="speak_alert"
+            app:title="@string/settings_speech_title"
+            app:summary="@string/settings_speech_summary"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="show_notification"
+            app:title="@string/settings_toast_title"
+            app:summary="@string/settings_toast_summary"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="vibrate"
+            app:title="@string/settings_vibrate_title"
+            app:summary="@string/settings_vibrate_summary"
+            app:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/settings_updates_category">
+
+        <SwitchPreferenceCompat
+            app:key="auto_update"
+            app:title="@string/settings_auto_update_title"
+            app:summary="@string/settings_auto_update_summary"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="diagnostic_logging"
+            app:title="@string/settings_diagnostics_title"
+            app:summary="@string/settings_diagnostics_summary"
+            app:defaultValue="false" />
+
+        <Preference
+            app:key="version"
+            app:title="@string/settings_version_title"
+            app:selectable="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
