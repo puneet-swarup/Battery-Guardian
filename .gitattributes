@@ -11,3 +11,15 @@
 
 *.ps1 text eol=crlf
 *.bat text eol=crlf
+
+# Force LF for shell scripts so Linux CI can execute them
+gradlew        text eol=lf
+gradlew.bat    text eol=crlf
+*.sh           text eol=lf
+
+# Keep binary artifacts binary
+*.jar          binary
+*.jks          binary
+*.keystore     binary
+*.aab          binary
+*.apk          binary
