@@ -149,8 +149,6 @@ dependencies {
     testImplementation("androidx.test.ext:junit:1.2.1")
     // FragmentScenario for Robolectric fragment tests.
     debugImplementation("androidx.fragment:fragment-testing:1.8.5")
-    testImplementation("androidx.fragment:fragment-testing:1.8.5")
-
     // Instrumented testing
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")

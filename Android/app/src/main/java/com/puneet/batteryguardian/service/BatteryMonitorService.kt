@@ -52,7 +52,11 @@ class BatteryMonitorService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_SNOOZE -> {
-                snooze(DEFAULT_SNOOZE_MINUTES)
+                // Honour the duration chosen in the UI; fall back to the default
+                // when the extra is missing or nonsensical.
+                val requested = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
+                val minutes = if (requested > 0) requested else DEFAULT_SNOOZE_MINUTES
+                snooze(minutes)
                 return START_STICKY
             }
         }
@@ -153,6 +157,7 @@ class BatteryMonitorService : Service() {
         const val ACTION_START = "com.puneet.batteryguardian.action.START"
         const val ACTION_STOP = "com.puneet.batteryguardian.action.STOP"
         const val ACTION_SNOOZE = "com.puneet.batteryguardian.action.SNOOZE"
+        const val EXTRA_SNOOZE_MINUTES = "minutes"
         private const val DEFAULT_SNOOZE_MINUTES = 30
 
         fun start(context: Context) {
@@ -170,7 +175,7 @@ class BatteryMonitorService : Service() {
 
         fun snooze(context: Context, minutes: Int) {
             val intent = Intent(context, BatteryMonitorService::class.java).setAction(ACTION_SNOOZE)
-            intent.putExtra("minutes", minutes)
+            intent.putExtra(EXTRA_SNOOZE_MINUTES, minutes)
             try {
                 context.startService(intent)
             } catch (_: Throwable) {

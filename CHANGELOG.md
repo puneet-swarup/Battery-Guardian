@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-10-01
+
+### Fixed (Android)
+- **Voice alerts now work on Android 11+.** Added the `android.intent.action.TTS_SERVICE` entry to a `<queries>` block in the manifest. Since Android 11 (API 30), apps must declare package visibility to bind the system Text-To-Speech engine; without it, `TextToSpeech` initialization failed silently and every spoken alert was skipped while notification/beep/vibration kept working.
+- **First alert on a cold start is no longer dropped.** Text-To-Speech initializes asynchronously, so an alert arriving before the engine was ready used to be discarded. `AlertNotifier` now queues the pending utterance and speaks it once the engine reports ready, and falls back to US English when the device language is unsupported by the engine.
+- **Battery receiver action corrected.** The manifest declared the invalid action `android.intent.action.ACTION_BATTERY_CHANGED`; corrected to `android.intent.action.BATTERY_CHANGED`.
+- **Snooze duration is now honoured.** The UI offers 30 minutes / 1 hour / 2 hours, but the service always snoozed for 30 minutes and ignored the `minutes` extra. The chosen duration is now applied.
+
+### Changed (Android)
+- `fragment-testing` is declared with `debugImplementation` (not `testImplementation`), per Android lint guidance, so its `EmptyActivity` manifest merges into the debug variant for `FragmentScenario`.
+
+### Added (Android)
+- **`AlertNotifierTest`** — Robolectric tests covering the notification/alert dispatch logic and the TTS init/queue paths. Android suite is now **178 tests across 20 classes**.
+
+## [2.0.0] - 2026-09-30
+
+### Added
+- **Android app** (Kotlin) — a native port of Battery Guardian for Android 9 (Pie) and newer. Foreground service monitoring, high/low alerts with notification + beep + text-to-speech + vibration, snooze, battery-health display, battery-optimisation exemption, in-app update check, and diagnostic logging.
+- **Android CI workflow** (`android.yml`) — builds and tests the APK on every push, and publishes a signed release APK on `v*` tags.
+- **Root README** now documents both platforms with build badges, a Platforms comparison, and an Android section.
+
 ## [1.12.0] - 2026-09-25
 
 ### Added

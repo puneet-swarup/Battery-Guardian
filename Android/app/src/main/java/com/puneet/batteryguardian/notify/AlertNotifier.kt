@@ -36,12 +36,36 @@ class AlertNotifier(private val context: Context) : AlertSink {
     @Volatile
     private var ttsReady = false
 
+    /**
+     * The most recent alert that arrived before the TTS engine finished
+     * initialising. Speaking is asynchronous, so on a cold start the very first
+     * alert can arrive while [ttsReady] is still false; without this we would
+     * silently drop it. It is flushed once the engine reports ready.
+     */
+    @Volatile
+    private var pendingUtterance: String? = null
+
     init {
         try {
             tts = TextToSpeech(context.applicationContext) { status ->
-                ttsReady = status == TextToSpeech.SUCCESS
-                if (ttsReady) {
-                    tts?.language = Locale.US
+                val ok = status == TextToSpeech.SUCCESS
+                ttsReady = ok
+                if (ok) {
+                    val result = tts?.setLanguage(Locale.getDefault())
+                    if (result == TextToSpeech.LANG_MISSING_DATA ||
+                        result == TextToSpeech.LANG_NOT_SUPPORTED
+                    ) {
+                        // Fall back to US English if the device language is not
+                        // available to the TTS engine.
+                        tts?.language = Locale.US
+                    }
+                    log.write("TTS ready")
+                    pendingUtterance?.let { queued ->
+                        pendingUtterance = null
+                        speakNow(queued)
+                    }
+                } else {
+                    log.write("TTS init failed (status=$status); voice alerts disabled")
                 }
             }
         } catch (t: Throwable) {
@@ -154,12 +178,23 @@ class AlertNotifier(private val context: Context) : AlertSink {
     }
 
     private fun speak(message: String) {
+        if (!ttsReady) {
+            // The engine has not finished initialising yet. Remember the most
+            // recent alert so it can be spoken once TTS reports ready.
+            pendingUtterance = message
+            log.write("TTS not ready; queued speech for later")
+            return
+        }
+        speakNow(message)
+    }
+
+    private fun speakNow(message: String) {
         try {
-            if (!ttsReady) {
-                log.write("TTS not ready; skipping speech")
-                return
+            val engine = tts ?: return
+            val result = engine.speak(message, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+            if (result == TextToSpeech.ERROR) {
+                log.write("TTS speak returned ERROR")
             }
-            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
         } catch (t: Throwable) {
             log.write("Speak failed: ${t.message}")
         }

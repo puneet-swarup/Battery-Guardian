@@ -148,6 +148,34 @@ The pure core/ and data/ layers have no Android dependencies and are the direct
 Kotlin ports of the Windows app's BatteryAlertEvaluator.cs and
 BatteryHealthInfo.cs, which is what makes them unit-testable.
 
+## Android version compatibility
+
+The app supports **Android 9 (API 28) through Android 15 (API 35)**, and
+`targetSdk` is 36. Version-specific behaviour is guarded with
+`Build.VERSION.SDK_INT` checks:
+
+| Version | Consideration | How it is handled |
+|---|---|---|
+| 9 (28) | Foreground service | Supported; FGS started from the UI or exempt broadcasts |
+| 10 (29) | Scoped storage | Not affected — no external storage writes |
+| 11 (30) | **TTS package visibility** | `<queries>` for `TTS_SERVICE` declared in the manifest |
+| 12 (31) | Immutable PendingIntents, `android:exported`, FGS background-start limits | `FLAG_IMMUTABLE` everywhere; `exported` declared; FGS only started from allowed contexts |
+| 13 (33) | `POST_NOTIFICATIONS` runtime permission; receiver exported flag | Permission requested at launch; `RECEIVER_NOT_EXPORTED` used |
+| 14 (34) | No new breaking changes for this app | Compatible |
+| 15 (35) | No new breaking changes for this app | Compatible |
+
+### Troubleshooting voice alerts
+
+If spoken alerts do not fire, enable **Settings → Diagnostic logging** and check
+`diagnostic.log`:
+
+- `TTS ready` — the engine initialized correctly.
+- `TTS init failed (status=...)` — the device has no usable TTS engine. Install or
+  update **Google Speech Services** (or the device's TTS engine), then pick a
+  language under **Settings → System → Languages & input → Text-to-speech output**.
+- `TTS not ready; queued speech for later` — an alert arrived during engine startup;
+  it is spoken automatically once ready.
+
 ## Notes on Android 9 behaviour
 
 - Monitoring runs in a foreground service with an ongoing notification
