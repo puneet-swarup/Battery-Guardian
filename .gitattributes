@@ -13,8 +13,8 @@
 *.bat text eol=crlf
 
 # Force LF for shell scripts so Linux CI can execute them
-gradlew        text eol=lf
-gradlew.bat    text eol=crlf
+Android/gradlew        text eol=lf
+Android/gradlew.bat    text eol=crlf
 *.sh           text eol=lf
 
 # Keep binary artifacts binary
