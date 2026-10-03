@@ -81,8 +81,8 @@ Settings, Apps and notifications, Special app access, Install unknown apps.
 ## Testing overview
 
 Unit tests live in app/src/test and run entirely on the JVM — no device or
-emulator required, which makes them ideal for CI. The suite has **242 tests**
-across 27 classes, split into two flavours:
+emulator required, which makes them ideal for CI. The suite has **249 tests**
+across 28 classes, split into two flavours:
 
 **Plain JUnit tests** (fast, no Android framework):
 
@@ -101,6 +101,7 @@ across 27 classes, split into two flavours:
 | QuietHoursEvaluatorTest | Quiet hours + DND suppression orchestration |
 | ChargeLimitResolverTest | Manufacturer to charge-limit guidance mapping |
 | WidgetStateTest | Home-screen widget presentation mapping |
+| TimePickerPreferenceTest | Quiet-hours time formatting (HH:mm) |
 
 **Robolectric tests** (real Android framework classes on the JVM):
 

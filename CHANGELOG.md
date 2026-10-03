@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-10-03
+
+### Fixed (Android)
+- **Quiet-hours window now uses a native time picker.** The settings previously asked users to type a number of minutes past midnight (e.g. `1320` for 22:00), which required mental arithmetic. The start and end fields now open the platform time-picker dialog and display a familiar `HH:mm` value. Internally the value is still stored as minutes, so no other code changed. Selecting a start identical to the end is rejected. Android suite: 249 tests.
+
 ## [2.1.0] - 2026-10-03
 
 ### Added
