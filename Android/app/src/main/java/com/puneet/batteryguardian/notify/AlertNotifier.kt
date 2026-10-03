@@ -77,10 +77,18 @@ class AlertNotifier(private val context: Context) : AlertSink {
      * Raises an alert using the supplied settings. Never throws - alerting
      * failures must not take down the monitoring service.
      */
-    override fun notify(message: String, settings: Settings) {
+    override fun notify(message: String, settings: Settings, suppressAudible: Boolean) {
         if (message.isBlank()) return
 
         if (settings.showNotification) postNotification(message)
+
+        // Audible channels are skipped during quiet hours / Do Not Disturb, but
+        // the visual notification above is always shown so nothing is missed.
+        if (suppressAudible) {
+            log.write("Audible alert suppressed (quiet hours / DND)")
+            return
+        }
+
         if (settings.playSound) playBeep()
         if (settings.vibrate) vibrate()
         if (settings.speakAlert) speak(message)

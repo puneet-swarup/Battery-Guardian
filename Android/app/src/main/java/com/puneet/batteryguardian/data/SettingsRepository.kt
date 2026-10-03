@@ -27,7 +27,15 @@ class SettingsRepository(context: Context) {
         lastUpdateCheckUtc = readInstant(KEY_LAST_UPDATE),
         diagnosticLoggingEnabled = prefs.getBoolean(KEY_DIAG, false),
         snoozedUntilUtc = readInstant(KEY_SNOOZE_UNTIL),
-        monitoringEnabled = prefs.getBoolean(KEY_MONITORING, false)
+        monitoringEnabled = prefs.getBoolean(KEY_MONITORING, false),
+        historyEnabled = prefs.getBoolean(KEY_HISTORY_ENABLED, true),
+        idealZoneLowPercent = prefs.getInt(KEY_IDEAL_LOW, 20),
+        idealZoneHighPercent = prefs.getInt(KEY_IDEAL_HIGH, 80),
+        quietHoursEnabled = prefs.getBoolean(KEY_QUIET_ENABLED, false),
+        quietHoursStartMinutes = prefs.getInt(KEY_QUIET_START, 22 * 60),
+        quietHoursEndMinutes = prefs.getInt(KEY_QUIET_END, 7 * 60),
+        respectDoNotDisturb = prefs.getBoolean(KEY_RESPECT_DND, true),
+        chargeLimitNudgeShown = prefs.getBoolean(KEY_CHARGE_NUDGE, false)
     )
 
     fun save(settings: Settings) {
@@ -44,6 +52,14 @@ class SettingsRepository(context: Context) {
             putBoolean(KEY_DIAG, settings.diagnosticLoggingEnabled)
             putInstant(KEY_SNOOZE_UNTIL, settings.snoozedUntilUtc)
             putBoolean(KEY_MONITORING, settings.monitoringEnabled)
+            putBoolean(KEY_HISTORY_ENABLED, settings.historyEnabled)
+            putInt(KEY_IDEAL_LOW, settings.idealZoneLowPercent)
+            putInt(KEY_IDEAL_HIGH, settings.idealZoneHighPercent)
+            putBoolean(KEY_QUIET_ENABLED, settings.quietHoursEnabled)
+            putInt(KEY_QUIET_START, settings.quietHoursStartMinutes)
+            putInt(KEY_QUIET_END, settings.quietHoursEndMinutes)
+            putBoolean(KEY_RESPECT_DND, settings.respectDoNotDisturb)
+            putBoolean(KEY_CHARGE_NUDGE, settings.chargeLimitNudgeShown)
         }
     }
 
@@ -80,5 +96,13 @@ class SettingsRepository(context: Context) {
         private const val KEY_DIAG = "diagnostic_logging"
         private const val KEY_SNOOZE_UNTIL = "snoozed_until"
         private const val KEY_MONITORING = "monitoring_enabled"
+        private const val KEY_HISTORY_ENABLED = "history_enabled"
+        private const val KEY_IDEAL_LOW = "ideal_zone_low"
+        private const val KEY_IDEAL_HIGH = "ideal_zone_high"
+        private const val KEY_QUIET_ENABLED = "quiet_hours_enabled"
+        private const val KEY_QUIET_START = "quiet_hours_start"
+        private const val KEY_QUIET_END = "quiet_hours_end"
+        private const val KEY_RESPECT_DND = "respect_dnd"
+        private const val KEY_CHARGE_NUDGE = "charge_nudge_shown"
     }
 }

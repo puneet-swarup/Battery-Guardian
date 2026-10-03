@@ -41,6 +41,28 @@ class SettingsFragment : PreferenceFragmentCompat() {
             DiagnosticLog.get(requireContext()).enabled = v
             save { it.copy(diagnosticLoggingEnabled = v) }
         }
+
+        // ---- Quiet hours (feature 5) ----
+        bindSwitch("quiet_hours_enabled", current.quietHoursEnabled) { v ->
+            save { it.copy(quietHoursEnabled = v) }
+        }
+        bindIntEdit("quiet_hours_start", current.quietHoursStartMinutes, MINUTES_MIN, MINUTES_MAX) { v ->
+            save { it.copy(quietHoursStartMinutes = v) }
+        }
+        bindIntEdit("quiet_hours_end", current.quietHoursEndMinutes, MINUTES_MIN, MINUTES_MAX) { v ->
+            save { it.copy(quietHoursEndMinutes = v) }
+        }
+        bindSwitch("respect_dnd", current.respectDoNotDisturb) { v ->
+            save { it.copy(respectDoNotDisturb = v) }
+        }
+
+        // ---- Battery history (feature 1) ----
+        bindSwitch("history_enabled", current.historyEnabled) { v ->
+            save { it.copy(historyEnabled = v) }
+        }
+        bindIdealZoneLow(current)
+        bindIdealZoneHigh(current)
+
         bindVersion()
     }
 
@@ -92,6 +114,60 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
+    /**
+     * Binds an EditTextPreference holding an integer within [min]..[max].
+     * Invalid or out-of-range input is rejected and the previous value kept.
+     */
+    private fun bindIntEdit(
+        key: String,
+        current: Int,
+        min: Int,
+        max: Int,
+        onChange: (Int) -> Unit
+    ) {
+        findPreference<EditTextPreference>(key)?.apply {
+            text = current.toString()
+            summary = current.toString()
+            setOnBindEditTextListener { it.setSelectAllOnFocus(true) }
+            setOnPreferenceChangeListener { pref, newValue ->
+                val v = (newValue as? String)?.trim()?.toIntOrNull()
+                    ?: return@setOnPreferenceChangeListener false
+                if (v < min || v > max) return@setOnPreferenceChangeListener false
+                (pref as EditTextPreference).summary = v.toString()
+                onChange(v)
+                true
+            }
+        }
+    }
+
+    private fun bindIdealZoneLow(settings: Settings) {
+        findPreference<SliderInputPreference>("ideal_zone_low")?.apply {
+            setValue(settings.idealZoneLowPercent)
+            setOnPreferenceChangeListener { _, newValue ->
+                val v = (newValue as? Int) ?: return@setOnPreferenceChangeListener false
+                if (v >= repository.load().idealZoneHighPercent) {
+                    return@setOnPreferenceChangeListener false
+                }
+                save { it.copy(idealZoneLowPercent = v) }
+                true
+            }
+        }
+    }
+
+    private fun bindIdealZoneHigh(settings: Settings) {
+        findPreference<SliderInputPreference>("ideal_zone_high")?.apply {
+            setValue(settings.idealZoneHighPercent)
+            setOnPreferenceChangeListener { _, newValue ->
+                val v = (newValue as? Int) ?: return@setOnPreferenceChangeListener false
+                if (v <= repository.load().idealZoneLowPercent) {
+                    return@setOnPreferenceChangeListener false
+                }
+                save { it.copy(idealZoneHighPercent = v) }
+                true
+            }
+        }
+    }
+
     private fun bindSwitch(key: String, current: Boolean, onChange: (Boolean) -> Unit) {
         findPreference<SwitchPreferenceCompat>(key)?.apply {
             isChecked = current
@@ -119,5 +195,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         } catch (t: Throwable) {
             DiagnosticLog.get(requireContext()).writeException("SettingsFragment.save", t)
         }
+    }
+
+    companion object {
+        // Minutes-since-midnight bounds for the quiet-hours window fields.
+        private const val MINUTES_MIN = 0
+        private const val MINUTES_MAX = 24 * 60 - 1
     }
 }

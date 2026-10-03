@@ -4,83 +4,116 @@
         Icon="Assets/app.ico"
         Title="Battery Guardian Settings"
         Height="Auto"
-        Width="400"
+        Width="440"
         SizeToContent="Height"
         MinHeight="240"
+        MaxHeight="720"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterOwner"
         Background="#F5F5F5">
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0"
-                   Text="High Threshold (%):"
-                   VerticalAlignment="Center"
-                   Foreground="#333333"
-                   Margin="0,0,10,14"/>
-        <TextBox x:Name="HighThresholdBox"
-                 Grid.Row="0" Grid.Column="1"
-                 Margin="0,0,0,14"
-                 Padding="4"/>
+            <!-- ==== Alert thresholds ==== -->
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Alerts"
+                       FontWeight="Bold" Foreground="#555" Margin="0,0,0,8"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="0"
-                   Text="Low Threshold (%):"
-                   VerticalAlignment="Center"
-                   Foreground="#333333"
-                   Margin="0,0,10,14"/>
-        <TextBox x:Name="LowThresholdBox"
-                 Grid.Row="1" Grid.Column="1"
-                 Margin="0,0,0,14"
-                 Padding="4"/>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="High Threshold (%):"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <TextBox x:Name="HighThresholdBox" Grid.Row="1" Grid.Column="1"
+                     Margin="0,0,0,14" Padding="4"/>
 
-        <TextBlock Grid.Row="2" Grid.Column="0"
-                   Text="Repeat Alert (sec):"
-                   VerticalAlignment="Center"
-                   Foreground="#333333"
-                   Margin="0,0,10,14"/>
-        <TextBox x:Name="RepeatIntervalBox"
-                 Grid.Row="2" Grid.Column="1"
-                 Margin="0,0,0,14"
-                 Padding="4"/>
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Low Threshold (%):"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <TextBox x:Name="LowThresholdBox" Grid.Row="2" Grid.Column="1"
+                     Margin="0,0,0,14" Padding="4"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0"
-                   Text="Updates:"
-                   VerticalAlignment="Center"
-                   Foreground="#333333"
-                   Margin="0,0,10,20"/>
-        <CheckBox x:Name="CheckForUpdatesCheckBox"
-                  Grid.Row="3" Grid.Column="1"
-                  VerticalAlignment="Center"
-                  Content="Automatically check on startup"
-                  Margin="0,0,0,20"/>
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Repeat Alert (sec):"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <TextBox x:Name="RepeatIntervalBox" Grid.Row="3" Grid.Column="1"
+                     Margin="0,0,0,14" Padding="4"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0"
-           Text="Diagnostics:"
-           VerticalAlignment="Center"
-           Foreground="#333333"
-           Margin="0,0,10,20"/>
-        <CheckBox x:Name="DiagnosticLoggingCheckBox"
-          Grid.Row="4" Grid.Column="1"
-          VerticalAlignment="Center"
-          Content="Enable diagnostic logging"
-          Margin="0,0,0,20"/>
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Updates:"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <CheckBox x:Name="CheckForUpdatesCheckBox" Grid.Row="4" Grid.Column="1"
+                      VerticalAlignment="Center" Content="Automatically check on startup"
+                      Margin="0,0,0,14"/>
 
-        <Button Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
-                Content="Save Settings"
-                Width="120" Height="32"
-                HorizontalAlignment="Center"
-                Click="SaveButton_Click"/>
-    </Grid>
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="Diagnostics:"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,20"/>
+            <CheckBox x:Name="DiagnosticLoggingCheckBox" Grid.Row="5" Grid.Column="1"
+                      VerticalAlignment="Center" Content="Enable diagnostic logging"
+                      Margin="0,0,0,20"/>
+
+            <!-- ==== Battery history ==== -->
+            <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Text="Battery History"
+                       FontWeight="Bold" Foreground="#555" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="Recording:"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <CheckBox x:Name="HistoryEnabledCheckBox" Grid.Row="7" Grid.Column="1"
+                      VerticalAlignment="Center" Content="Record charge history for trends"
+                      Margin="0,0,0,14"/>
+
+            <TextBlock Grid.Row="8" Grid.Column="0" Text="Ideal zone (%):"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,20"/>
+            <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,20">
+                <TextBox x:Name="IdealZoneLowBox" Width="50" Padding="4"/>
+                <TextBlock Text=" to " VerticalAlignment="Center" Margin="6,0"/>
+                <TextBox x:Name="IdealZoneHighBox" Width="50" Padding="4"/>
+            </StackPanel>
+
+            <!-- ==== Quiet hours ==== -->
+            <TextBlock Grid.Row="9" Grid.ColumnSpan="2" Text="Quiet Hours"
+                       FontWeight="Bold" Foreground="#555" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="10" Grid.Column="0" Text="Quiet hours:"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <CheckBox x:Name="QuietHoursEnabledCheckBox" Grid.Row="10" Grid.Column="1"
+                      VerticalAlignment="Center" Content="Silence audible alerts during a window"
+                      Margin="0,0,0,14"/>
+
+            <TextBlock Grid.Row="11" Grid.Column="0" Text="Window (HH:mm):"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,14"/>
+            <StackPanel Grid.Row="11" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,14">
+                <TextBox x:Name="QuietStartBox" Width="60" Padding="4"/>
+                <TextBlock Text=" to " VerticalAlignment="Center" Margin="6,0"/>
+                <TextBox x:Name="QuietEndBox" Width="60" Padding="4"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="12" Grid.Column="0" Text="Focus Assist:"
+                       VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,20"/>
+            <CheckBox x:Name="RespectFocusAssistCheckBox" Grid.Row="12" Grid.Column="1"
+                      VerticalAlignment="Center" Content="Also silence while Windows Focus Assist is on"
+                      Margin="0,0,0,20"/>
+
+            <Button Grid.Row="14" Grid.Column="0" Grid.ColumnSpan="2"
+                    Content="Save Settings"
+                    Width="120" Height="32"
+                    HorizontalAlignment="Center"
+                    Click="SaveButton_Click"/>
+        </Grid>
+    </ScrollViewer>
 </Window>

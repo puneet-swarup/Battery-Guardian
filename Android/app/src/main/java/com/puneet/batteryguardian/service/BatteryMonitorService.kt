@@ -12,7 +12,13 @@ import com.puneet.batteryguardian.battery.BatteryReader
 import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.notify.AlertNotifier
+import com.puneet.batteryguardian.core.BatteryHistoryEntry
+import com.puneet.batteryguardian.core.QuietHoursEvaluator
+import com.puneet.batteryguardian.data.BatteryHistoryStore
+import com.puneet.batteryguardian.data.NotificationDndDetector
+import com.puneet.batteryguardian.data.SettingsQuietHoursProvider
 import com.puneet.batteryguardian.notify.NotificationChannels
+import com.puneet.batteryguardian.widget.BatteryWidgetProvider
 import java.time.Instant
 
 /**
@@ -31,6 +37,9 @@ class BatteryMonitorService : Service() {
     private lateinit var coordinator: AlertCoordinator
     private lateinit var batteryReader: BatteryReader
     private lateinit var log: DiagnosticLog
+    private lateinit var historyStore: BatteryHistoryStore
+    private lateinit var quietHoursEvaluator: QuietHoursEvaluator
+    private var lastHistoryWriteMillis: Long = 0L
 
     private var receiver: BatteryStateReceiver? = null
     private var started = false
@@ -40,7 +49,28 @@ class BatteryMonitorService : Service() {
         settingsRepository = SettingsRepository(this)
         notifier = AlertNotifier(this)
         batteryReader = BatteryReader(this)
-        coordinator = AlertCoordinator(this, settingsRepository, notifier)
+        historyStore = BatteryHistoryStore(this)
+
+        // Quiet-hours evaluation is composed from injected abstractions so it
+        // stays pure and testable. The schedule provider reads settings lazily.
+        quietHoursEvaluator = QuietHoursEvaluator(
+            scheduleProvider = SettingsQuietHoursProvider { settingsRepository.load() },
+            dndDetector = NotificationDndDetector(this)
+        )
+
+        coordinator = AlertCoordinator(
+            context = this,
+            settingsRepository = settingsRepository,
+            notifier = notifier,
+            isAudibleSuppressed = {
+                val settings = settingsRepository.load()
+                if (settings.respectDoNotDisturb) {
+                    quietHoursEvaluator.isAudibleAlertSuppressed()
+                } else {
+                    quietHoursEvaluator.isWithinQuietHours()
+                }
+            }
+        )
         log = DiagnosticLog.get(this)
         NotificationChannels.ensureCreated(this)
     }
@@ -77,8 +107,10 @@ class BatteryMonitorService : Service() {
             }
 
             receiver = BatteryStateReceiver { snapshot ->
+                recordHistory(snapshot)
                 val result = coordinator.onBatterySnapshot(snapshot)
                 OngoingNotification.update(this, result.snapshot)
+                BatteryWidgetProvider.refreshAll(this)
             }
 
             val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -99,6 +131,32 @@ class BatteryMonitorService : Service() {
 
         // Immediate first evaluation against the sticky battery intent.
         evaluateNow()
+    }
+
+    /**
+     * Records a battery reading into the history store at most once per five
+     * minutes, keeping the file small while still capturing trends. Honors the
+     * user's historyEnabled setting and ignores unknown readings.
+     */
+    private fun recordHistory(snapshot: com.puneet.batteryguardian.battery.BatterySnapshot) {
+        try {
+            if (snapshot.percent < 0) return
+            if (!settingsRepository.load().historyEnabled) return
+
+            val now = System.currentTimeMillis()
+            if (now - lastHistoryWriteMillis < HISTORY_WRITE_INTERVAL_MILLIS) return
+            lastHistoryWriteMillis = now
+
+            historyStore.append(
+                BatteryHistoryEntry(
+                    utc = Instant.ofEpochMilli(now),
+                    percent = snapshot.percent,
+                    isOnAcPower = snapshot.isOnAcPower
+                )
+            )
+        } catch (t: Throwable) {
+            log.writeException("recordHistory", t)
+        }
     }
 
     private fun evaluateNow() {
@@ -159,6 +217,7 @@ class BatteryMonitorService : Service() {
         const val ACTION_SNOOZE = "com.puneet.batteryguardian.action.SNOOZE"
         const val EXTRA_SNOOZE_MINUTES = "minutes"
         private const val DEFAULT_SNOOZE_MINUTES = 30
+        private const val HISTORY_WRITE_INTERVAL_MILLIS = 5 * 60 * 1000L
 
         fun start(context: Context) {
             val intent = Intent(context, BatteryMonitorService::class.java).setAction(ACTION_START)

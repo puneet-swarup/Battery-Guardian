@@ -92,6 +92,43 @@
     <string name="update_download_button">Download</string>
     <string name="update_open_release_button">Open release page</string>
 
+    <!-- Home-screen widget -->
+    <string name="widget_name">Battery Guardian</string>
+    <string name="widget_description">Live battery level, status and health</string>
+    <string name="widget_level_fmt">%1$d%%</string>
+    <string name="widget_level_unknown">--</string>
+    <string name="widget_charging">Charging</string>
+    <string name="widget_not_charging">On battery</string>
+
+    <!-- Battery history screen -->
+    <string name="history_menu_title">Battery History &amp; Trends</string>
+    <string name="history_dialog_title">Battery History &amp; Trends</string>
+    <string name="history_clear_button">Clear history</string>
+    <string name="history_empty">No history recorded yet. Leave monitoring on and readings will accumulate.</string>
+
+    <!-- Charge limit guidance -->
+    <string name="charge_limit_menu_title">Charge limit</string>
+    <string name="charge_limit_dialog_title">Charge limit</string>
+    <string name="charge_limit_open_settings">Open battery settings</string>
+
+    <!-- New settings -->
+    <string name="settings_history_category">Battery history</string>
+    <string name="settings_history_enabled_title">Record battery history</string>
+    <string name="settings_history_enabled_summary">Store periodic readings for trend analysis</string>
+    <string name="settings_ideal_low_title">Ideal zone lower bound (%%)</string>
+    <string name="settings_ideal_low_summary">Below this is considered a low-stress zone edge</string>
+    <string name="settings_ideal_high_title">Ideal zone upper bound (%%)</string>
+    <string name="settings_ideal_high_summary">Above this is considered a high-stress zone edge</string>
+    <string name="settings_quiet_category">Quiet hours</string>
+    <string name="settings_quiet_enabled_title">Enable quiet hours</string>
+    <string name="settings_quiet_enabled_summary">Silence sound and speech during a daily window</string>
+    <string name="settings_quiet_start_title">Quiet hours start (minutes past midnight)</string>
+    <string name="settings_quiet_start_summary">e.g. 1320 for 22:00</string>
+    <string name="settings_quiet_end_title">Quiet hours end (minutes past midnight)</string>
+    <string name="settings_quiet_end_summary">e.g. 420 for 07:00</string>
+    <string name="settings_respect_dnd_title">Respect Do Not Disturb</string>
+    <string name="settings_respect_dnd_summary">Also silence audible alerts while DND is active</string>
+
     <!-- Generic -->
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>

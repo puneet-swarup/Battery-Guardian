@@ -60,6 +60,64 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/settings_quiet_category">
+
+        <SwitchPreferenceCompat
+            app:key="quiet_hours_enabled"
+            app:title="@string/settings_quiet_enabled_title"
+            app:summary="@string/settings_quiet_enabled_summary"
+            app:defaultValue="false" />
+
+        <EditTextPreference
+            app:key="quiet_hours_start"
+            app:title="@string/settings_quiet_start_title"
+            app:summary="@string/settings_quiet_start_summary"
+            app:defaultValue="1320"
+            app:dialogTitle="@string/settings_quiet_start_title" />
+
+        <EditTextPreference
+            app:key="quiet_hours_end"
+            app:title="@string/settings_quiet_end_title"
+            app:summary="@string/settings_quiet_end_summary"
+            app:defaultValue="420"
+            app:dialogTitle="@string/settings_quiet_end_title" />
+
+        <SwitchPreferenceCompat
+            app:key="respect_dnd"
+            app:title="@string/settings_respect_dnd_title"
+            app:summary="@string/settings_respect_dnd_summary"
+            app:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/settings_history_category">
+
+        <SwitchPreferenceCompat
+            app:key="history_enabled"
+            app:title="@string/settings_history_enabled_title"
+            app:summary="@string/settings_history_enabled_summary"
+            app:defaultValue="true" />
+
+        <com.puneet.batteryguardian.ui.pref.SliderInputPreference
+            app:key="ideal_zone_low"
+            app:title="@string/settings_ideal_low_title"
+            app:summary="@string/settings_ideal_low_summary"
+            app:defaultValue="20"
+            app:sliderMin="5"
+            app:sliderMax="50"
+            app:sliderSuffix="%" />
+
+        <com.puneet.batteryguardian.ui.pref.SliderInputPreference
+            app:key="ideal_zone_high"
+            app:title="@string/settings_ideal_high_title"
+            app:summary="@string/settings_ideal_high_summary"
+            app:defaultValue="80"
+            app:sliderMin="50"
+            app:sliderMax="100"
+            app:sliderSuffix="%" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="@string/settings_updates_category">
 
         <SwitchPreferenceCompat

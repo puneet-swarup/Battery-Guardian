@@ -130,4 +130,49 @@ class SettingsRepositoryTest {
         repository.save(Settings(lastUpdateCheckUtc = null))
         assertNull(repository.load().lastUpdateCheckUtc)
     }
+
+    @Test
+    fun `history settings round-trip`() {
+        repository.save(
+            Settings(
+                historyEnabled = false,
+                idealZoneLowPercent = 25,
+                idealZoneHighPercent = 75
+            )
+        )
+        val loaded = repository.load()
+        assertFalse(loaded.historyEnabled)
+        assertEquals(25, loaded.idealZoneLowPercent)
+        assertEquals(75, loaded.idealZoneHighPercent)
+    }
+
+    @Test
+    fun `quiet hours settings round-trip`() {
+        repository.save(
+            Settings(
+                quietHoursEnabled = true,
+                quietHoursStartMinutes = 21 * 60,
+                quietHoursEndMinutes = 6 * 60,
+                respectDoNotDisturb = false
+            )
+        )
+        val loaded = repository.load()
+        assertTrue(loaded.quietHoursEnabled)
+        assertEquals(21 * 60, loaded.quietHoursStartMinutes)
+        assertEquals(6 * 60, loaded.quietHoursEndMinutes)
+        assertFalse(loaded.respectDoNotDisturb)
+    }
+
+    @Test
+    fun `new settings fall back to documented defaults`() {
+        val s = repository.load()
+        assertTrue(s.historyEnabled)
+        assertEquals(20, s.idealZoneLowPercent)
+        assertEquals(80, s.idealZoneHighPercent)
+        assertFalse(s.quietHoursEnabled)
+        assertEquals(22 * 60, s.quietHoursStartMinutes)
+        assertEquals(7 * 60, s.quietHoursEndMinutes)
+        assertTrue(s.respectDoNotDisturb)
+        assertFalse(s.chargeLimitNudgeShown)
+    }
 }
