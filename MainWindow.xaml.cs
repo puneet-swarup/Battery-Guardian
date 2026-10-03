@@ -11,6 +11,9 @@ using System.Windows.Threading;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Win32;
 using System.Reflection;
+using BatteryGuardian.History;
+using BatteryGuardian.QuietHours;
+using BatteryGuardian.ChargeLimit;
 
 namespace BatteryGuardian
 {
@@ -53,6 +56,10 @@ namespace BatteryGuardian
         private bool _isExiting;
         private string _currentAlertMessage = "";
         private readonly UpdateService _updateService = new();
+        private readonly BatteryHistoryAnalyzer _historyAnalyzer = new();
+        private readonly IBatteryHistoryStore _historyStore = JsonFileBatteryHistoryStore.CreateDefault();
+        private readonly QuietHoursEvaluator _quietHoursEvaluator;
+        private DateTime _lastHistoryWriteUtc = DateTime.MinValue;
         private bool _updateCheckInProgress;
         private System.Windows.Controls.MenuItem? _snooze30Item;
         private System.Windows.Controls.MenuItem? _snooze1hItem;
@@ -71,6 +78,11 @@ namespace BatteryGuardian
             DiagnosticLog.Write($"CTOR: _alarmTimer created. Initial interval={_alarmTimer.Interval}");
 
             LoadSettings();
+            _quietHoursEvaluator = new QuietHoursEvaluator(
+                new SettingsQuietHoursProvider(() => _settings),
+                new WindowsDoNotDisturbDetector(),
+                new SystemClock());
+
             InitializeTrayIcon();
 
             Loaded += MainWindow_Loaded;
@@ -160,6 +172,14 @@ namespace BatteryGuardian
             };
             contextMenu.Items.Add(diagItem);
 
+            var historyItem = new System.Windows.Controls.MenuItem { Header = "Battery History & Trends" };
+            historyItem.Click += (s, e) => ShowHistorySummary();
+            contextMenu.Items.Add(historyItem);
+
+            var chargeLimitItem = new System.Windows.Controls.MenuItem { Header = "Set Charge Limit..." };
+            chargeLimitItem.Click += (s, e) => ShowChargeLimitDialog();
+            contextMenu.Items.Add(chargeLimitItem);
+
             contextMenu.Items.Add(new System.Windows.Controls.Separator());
 
             _snooze30Item = new System.Windows.Controls.MenuItem { Header = "Snooze 30 minutes" };
@@ -194,6 +214,153 @@ namespace BatteryGuardian
 
             _notifyIcon.ContextMenu = contextMenu;
             _notifyIcon.TrayMouseDoubleClick += (s, e) => RestoreWindow();
+        }
+
+        /// <summary>Shows the aggregated battery history summary.</summary>
+        private void ShowHistorySummary()
+        {
+            try
+            {
+                System.Windows.MessageBox.Show(
+                    BuildHistorySummary(),
+                    "Battery History & Trends",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteException("ShowHistorySummary", ex);
+            }
+        }
+
+        /// <summary>
+        /// Detects a vendor charge-limit interface and, if found, asks the user
+        /// for a target percentage and applies it. If none is available, explains
+        /// why rather than failing silently.
+        /// </summary>
+        private void ShowChargeLimitDialog()
+        {
+            try
+            {
+                var factory = new ChargeLimitControllerFactory();
+                var capability = factory.Describe();
+
+                if (!capability.IsSupported)
+                {
+                    System.Windows.MessageBox.Show(
+                        capability.UnsupportedReason +
+                        "\n\nCharge limits are a firmware feature offered by some laptop vendors " +
+                        "(Lenovo, Dell, ASUS). If your laptop supports one, install the vendor's " +
+                        "power-management driver and reopen this dialog.",
+                        "Charge Limit Unavailable",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+
+                var controller = factory.GetAvailableController();
+                if (controller == null)
+                {
+                    System.Windows.MessageBox.Show("No charge-limit controller is currently available.",
+                        "Charge Limit", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                var input = PromptForChargeLimit(capability);
+                if (input == null) return;
+
+                var result = controller.SetLimitPercent(input.Value);
+                System.Windows.MessageBox.Show(
+                    result.Message,
+                    result.Success ? "Charge Limit Applied" : "Charge Limit Failed",
+                    System.Windows.MessageBoxButton.OK,
+                    result.Success ? System.Windows.MessageBoxImage.Information : System.Windows.MessageBoxImage.Warning);
+
+                if (result.Success)
+                {
+                    _settings.LastAppliedChargeLimitPercent = input.Value;
+                    SaveSettings(_settings);
+                }
+            }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteException("ShowChargeLimitDialog", ex);
+            }
+        }
+
+        /// <summary>
+        /// Prompts for a charge limit percentage. Returns null if the user cancels
+        /// or enters an invalid value.
+        /// </summary>
+        private int? PromptForChargeLimit(ChargeLimitCapability capability)
+        {
+            int current = capability.CurrentLimitPercent ?? _settings.LastAppliedChargeLimitPercent;
+            if (current < ChargeLimitControllerBase.MinLimitPercent)
+                current = ChargeLimitControllerBase.MaxLimitPercent;
+
+            var window = new Window
+            {
+                Title = $"Set Charge Limit ({capability.VendorName})",
+                Width = 380,
+                Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                Background = System.Windows.Media.Brushes.WhiteSmoke
+            };
+
+            var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(20) };
+            panel.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = $"Set the battery charge limit to a value between " +
+                       $"{ChargeLimitControllerBase.MinLimitPercent}% and " +
+                       $"{ChargeLimitControllerBase.MaxLimitPercent}%.",
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 12)
+            });
+
+            var box = new System.Windows.Controls.TextBox
+            {
+                Text = current.ToString(),
+                Padding = new Thickness(4),
+                Margin = new Thickness(0, 0, 0, 16)
+            };
+            panel.Children.Add(box);
+
+            int? result = null;
+
+            var okButton = new System.Windows.Controls.Button
+            {
+                Content = "Apply",
+                Width = 100,
+                Height = 30,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+            };
+            okButton.Click += (s, e) =>
+            {
+                if (int.TryParse(box.Text, out int value) &&
+                    value >= ChargeLimitControllerBase.MinLimitPercent &&
+                    value <= ChargeLimitControllerBase.MaxLimitPercent)
+                {
+                    result = value;
+                    window.DialogResult = true;
+                    window.Close();
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show(
+                        $"Please enter a whole number between " +
+                        $"{ChargeLimitControllerBase.MinLimitPercent} and " +
+                        $"{ChargeLimitControllerBase.MaxLimitPercent}.",
+                        "Invalid Input", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
+            };
+            panel.Children.Add(okButton);
+
+            window.Content = panel;
+            window.ShowDialog();
+
+            return result;
         }
 
         private void OpenAboutWindow()
@@ -440,25 +607,8 @@ namespace BatteryGuardian
                         DiagnosticLog.WriteException("AlarmTimer_Tick.ShowToastNotification", ex);
                     }
 
-                    try
-                    {
-                        SystemSounds.Beep.Play();
-                        DiagnosticLog.Write("AlarmTimer_Tick: beep played");
-                    }
-                    catch (Exception ex)
-                    {
-                        DiagnosticLog.WriteException("AlarmTimer_Tick.Beep", ex);
-                    }
-
-                    try
-                    {
-                        _speechSynthesizer.SpeakAsync(_currentAlertMessage);
-                        DiagnosticLog.Write("AlarmTimer_Tick: speech queued");
-                    }
-                    catch (Exception ex)
-                    {
-                        DiagnosticLog.WriteException("AlarmTimer_Tick.Speak", ex);
-                    }
+                    PlayAudibleAlert(_currentAlertMessage);
+                    DiagnosticLog.Write("AlarmTimer_Tick: audible alert dispatched");
                 }
                 else
                 {
@@ -649,6 +799,7 @@ namespace BatteryGuardian
                 if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 60) + "...";
                 _notifyIcon.ToolTipText = tooltip;
 
+                RecordHistory(status.BatteryLifePercent, isOnAcPower);
                 EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
             }
             else
@@ -741,8 +892,7 @@ namespace BatteryGuardian
                 _highAlertActive = true;
                 _currentAlertMessage = newState.HighAlertMessage;
                 ShowToastNotification("Battery Guardian", newState.HighAlertMessage);
-                SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync(newState.HighAlertMessage);
+                PlayAudibleAlert(newState.HighAlertMessage);
                 StartAlarmTimerIfNeeded(forceRestart: true);
             }
             else if (!newState.HighAlertShouldBeActive && _highAlertActive)
@@ -756,8 +906,7 @@ namespace BatteryGuardian
                 _lowAlertActive = true;
                 _currentAlertMessage = newState.LowAlertMessage;
                 ShowToastNotification("Battery Guardian", newState.LowAlertMessage);
-                SystemSounds.Beep.Play();
-                _speechSynthesizer.SpeakAsync(newState.LowAlertMessage);
+                PlayAudibleAlert(newState.LowAlertMessage);
                 StartAlarmTimerIfNeeded(forceRestart: true);
             }
             else if (!newState.LowAlertShouldBeActive && _lowAlertActive)
@@ -780,6 +929,106 @@ namespace BatteryGuardian
 
             DiagnosticLog.Write($"EvaluateAlerts END: highActive={_highAlertActive}, " +
                     $"lowActive={_lowAlertActive}, timerEnabled={_alarmTimer.IsEnabled}");
+        }
+
+        /// <summary>
+        /// Plays the audible portion of an alert (beep + speech) unless quiet
+        /// hours or Windows Focus Assist currently suppress sound. Visual
+        /// notification is always handled separately by the caller.
+        /// </summary>
+        /// <summary>
+        /// Records a battery reading into the history store at most once per
+        /// five minutes, keeping the file small while still capturing trends.
+        /// Honors the user's HistoryEnabled setting.
+        /// </summary>
+        private void RecordHistory(int percent, bool isOnAcPower)
+        {
+            if (!_settings.HistoryEnabled) return;
+
+            var now = DateTime.UtcNow;
+            if ((now - _lastHistoryWriteUtc).TotalMinutes < 5) return;
+            _lastHistoryWriteUtc = now;
+
+            try
+            {
+                _historyStore.Append(new BatteryHistoryEntry(now, percent, isOnAcPower));
+            }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteException("RecordHistory", ex);
+            }
+        }
+
+        /// <summary>
+        /// Builds a short, human-readable summary of the recorded battery history
+        /// for display in a message box.
+        /// </summary>
+        private string BuildHistorySummary()
+        {
+            var entries = _historyStore.GetAll();
+            var stats = _historyAnalyzer.Analyze(
+                entries,
+                _settings.IdealZoneHighPercent,
+                _settings.IdealZoneLowPercent);
+
+            if (stats.TotalEntries == 0)
+            {
+                return "No battery history has been recorded yet. " +
+                       "Leave the app running and readings will accumulate over time.";
+            }
+
+            return
+                $"Recorded readings: {stats.TotalEntries}\n" +
+                $"Days covered: {stats.DaysCovered}\n" +
+                $"Average charge: {stats.AveragePercent}%\n" +
+                $"Range: {stats.MinPercent}% - {stats.MaxPercent}%\n\n" +
+                $"Ideal zone ({_settings.IdealZoneLowPercent}-{_settings.IdealZoneHighPercent}%): " +
+                $"{FormatHours(stats.TimeInIdealZone)}\n" +
+                $"Above {_settings.IdealZoneHighPercent}%: {FormatHours(stats.TimeAboveHighZone)}\n" +
+                $"Below {_settings.IdealZoneLowPercent}%: {FormatHours(stats.TimeBelowLowZone)}\n\n" +
+                $"Estimated wear from current habits: ~{stats.EstimatedAnnualWearPercent}% per year";
+        }
+
+        private static string FormatHours(TimeSpan span)
+        {
+            if (span.TotalHours >= 1) return $"{(int)span.TotalHours}h {span.Minutes}m";
+            return $"{span.Minutes}m";
+        }
+
+        private void PlayAudibleAlert(string message)
+        {
+            if (IsAudibleSuppressed())
+            {
+                DiagnosticLog.Write("PlayAudibleAlert: suppressed by quiet hours / Focus Assist");
+                return;
+            }
+
+            try { SystemSounds.Beep.Play(); }
+            catch (Exception ex) { DiagnosticLog.WriteException("PlayAudibleAlert.Beep", ex); }
+
+            try { _speechSynthesizer.SpeakAsync(message); }
+            catch (Exception ex) { DiagnosticLog.WriteException("PlayAudibleAlert.Speak", ex); }
+        }
+
+        /// <summary>
+        /// True when audible alerting should be silenced. Delegates to the pure,
+        /// unit-tested <see cref="QuietHoursEvaluator"/>. When the user has opted
+        /// out of Focus Assist awareness, only the manual quiet-hours window applies.
+        /// </summary>
+        private bool IsAudibleSuppressed()
+        {
+            try
+            {
+                if (!_settings.RespectFocusAssist)
+                    return _quietHoursEvaluator.IsWithinQuietHours();
+
+                return _quietHoursEvaluator.IsAudibleAlertSuppressed();
+            }
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteException("IsAudibleSuppressed", ex);
+                return false;
+            }
         }
 
         private void StartAlarmTimerIfNeeded(bool forceRestart = false)

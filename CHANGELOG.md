@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-03
+
+### Added
+- **Battery history & trends** (Windows + Android). Periodic readings are recorded locally (at most one every 5 minutes, capped at 5000 entries) and summarised as average/range, time spent in the ideal charge zone, time above/below it, and a heuristic estimated annual wear. A "Battery History & Trends" view is available from the Windows tray menu and the Android main screen.
+- **Quiet hours / Do Not Disturb awareness** (Windows + Android). A configurable daily window (default 22:00-07:00, midnight-spanning supported) plus OS Do Not Disturb detection (Windows Focus Assist; Android interruption filter) silence audible alerts while still showing the notification.
+- **Battery charge-limit integration** (Windows). Tray menu action that detects a vendor WMI interface (Lenovo, Dell presets, ASUS) and applies a charge limit (40-100%).
+- **Battery charge-limit guidance** (Android). Detects the device manufacturer (Samsung, Pixel, OnePlus/Oppo/Realme, Xiaomi) and deep-links to the OEM battery settings, since Android provides no API for third-party apps to set a charge limit.
+- **Home-screen widget** (Android). A resizable widget showing live battery level, charging status and (where available) health; tapping it opens the app.
+
+### Changed
+- **Windows Settings dialog** now persists all settings fields, fixing a latent bug where saving could drop unrelated values (e.g. snooze state).
+- Settings on both platforms gained sections for battery history and quiet hours.
+
+### Fixed
+- Windows Settings window now scrolls, so the added options remain reachable on small screens.
+
+### Tests
+- **Windows:** suite grew from 41 to **141 tests** (history analytics + store, quiet hours, time-of-day parsing, charge-limit controllers/factory/preset mapping).
+- **Android:** suite grew from 178 to **242 tests across 27 classes** (history analytics + formatter + store, quiet hours schedule + evaluator, charge-limit resolver, widget presentation, audible-suppression in the alert coordinator).
+
 ## [2.0.1] - 2026-10-01
 
 ### Fixed (Android)

@@ -75,6 +75,9 @@ Both are built and tested automatically on every push and pull request by GitHub
 - **Automatic Update Check**: Notifies you when a newer version is available and offers a one-click link to the download page.
 - **Snooze**: Temporarily silence alerts for 30 minutes or 1 hour. Useful during meetings or presentations. Alerts resume automatically when the snooze expires.
 - **Diagnostic logging**: Optional toggle in Settings for troubleshooting.
+- **Battery history & trends**: Records periodic readings locally and shows average/range, time spent in the ideal charge zone, and an estimated annual wear from your habits.
+- **Quiet hours / Focus Assist aware**: Silence audible alerts during a configurable daily window or while Windows Focus Assist is on (the notification still appears).
+- **Charge-limit integration**: On supported laptops (Lenovo, Dell, ASUS), set a battery charge limit (e.g. 80%) straight from the tray menu.
 ---
 
 ## 🛠️ Prerequisites
@@ -176,11 +179,15 @@ The debug APK is written to `Android/app/build/outputs/apk/debug/app-debug.apk`.
 - **Battery health** (wear level) where the device exposes design capacity.
 - **Battery-optimisation exemption** button for reliable background monitoring.
 - **In-app update check** against GitHub Releases.
+- **Battery history & trends** with a summary view.
+- **Quiet hours / Do Not Disturb aware** audible-alert suppression.
+- **Charge-limit guidance** — detects the OEM battery-protection setting and deep-links to it.
+- **Home-screen widget** showing live level, status and health.
 - **Diagnostic logging** toggle.
 
 ### Android testing
 
-The Android app has **172 JVM unit tests across 19 classes** (plain JUnit + Robolectric) — no device or emulator required, so they run in CI. Coverage is generated with JaCoCo via `build.bat coverage`.
+The Android app has **242 JVM unit tests across 27 classes** (plain JUnit + Robolectric) — no device or emulator required, so they run in CI. Coverage is generated with JaCoCo via `build.bat coverage`.
 
 See the [Android testing overview](Android/README.md#testing-overview) for the full class-by-class breakdown.
 
@@ -189,7 +196,6 @@ See the [Android testing overview](Android/README.md#testing-overview) for the f
 ## 🗺️ Roadmap
 - WiX-based MSI installer with a proper uninstaller (Windows).
 - Play Store listing for the Android app.
-- Home-screen widget showing live battery level (Android).
 
 See *CHANGELOG.md* for a full history of changes.
 
@@ -207,7 +213,7 @@ dotnet test
 
 Or from Visual Studio: Test → Run All Tests (Ctrl + R, A).
 
-**Android (Kotlin):** run `cd Android` then `build.bat test` (172 JVM unit tests) or `build.bat coverage` (tests + JaCoCo coverage report). No device or emulator needed.
+**Android (Kotlin):** run `cd Android` then `build.bat test` (242 JVM unit tests) or `build.bat coverage` (tests + JaCoCo coverage report). No device or emulator needed.
 
 All tests must pass before submitting a pull request.
 

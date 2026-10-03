@@ -25,10 +25,12 @@ class AlertCoordinatorTest {
     private class RecordingSink : AlertSink {
         val messages = mutableListOf<String>()
         val settingsSeen = mutableListOf<Settings>()
+        val suppressedFlags = mutableListOf<Boolean>()
         var releaseCount = 0
-        override fun notify(message: String, settings: Settings) {
+        override fun notify(message: String, settings: Settings, suppressAudible: Boolean) {
             messages.add(message)
             settingsSeen.add(settings)
+            suppressedFlags.add(suppressAudible)
         }
         override fun release() {
             releaseCount++
@@ -59,7 +61,7 @@ class AlertCoordinatorTest {
         every { repository.load() } answers { stored }
     }
 
-    private fun coordinator() = AlertCoordinator(context, repository, sink) { now }
+    private fun coordinator() = AlertCoordinator(context, repository, sink, clock = { now })
 
     private fun snapshot(percent: Int, onAc: Boolean) = BatterySnapshot(
         percent = percent,
@@ -198,5 +200,34 @@ class AlertCoordinatorTest {
         val snap = snapshot(96, onAc = true)
         val result = coordinator().onBatterySnapshot(snap)
         assertEquals(snap, result.snapshot)
+    }
+
+    // ---- Audible suppression (quiet hours / DND) ----
+
+    @Test
+    fun `alert still fires when audible suppressed but flags the sink`() {
+        val c = AlertCoordinator(context, repository, sink, { now }, isAudibleSuppressed = { true })
+        val result = c.onBatterySnapshot(snapshot(96, onAc = true))
+        assertTrue(result.alertFired)
+        assertEquals(1, sink.messages.size)
+        assertEquals(listOf(true), sink.suppressedFlags)
+    }
+
+    @Test
+    fun `audible not suppressed by default`() {
+        val result = coordinator().onBatterySnapshot(snapshot(96, onAc = true))
+        assertTrue(result.alertFired)
+        assertEquals(listOf(false), sink.suppressedFlags)
+    }
+
+    @Test
+    fun `suppression predicate is evaluated per fire`() {
+        var suppressed = false
+        val c = AlertCoordinator(context, repository, sink, { now }, isAudibleSuppressed = { suppressed })
+        c.onBatterySnapshot(snapshot(96, onAc = true))
+        suppressed = true
+        now = now.plusSeconds(301)
+        c.onBatterySnapshot(snapshot(97, onAc = true))
+        assertEquals(listOf(false, true), sink.suppressedFlags)
     }
 }

@@ -21,7 +21,13 @@ class AlertCoordinator(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val notifier: AlertSink,
-    private val clock: () -> Instant = { Instant.now() }
+    private val clock: () -> Instant = { Instant.now() },
+    /**
+     * Returns true when audible channels (sound, speech, vibration) should be
+     * suppressed for the current moment (quiet hours / Do Not Disturb). Injected
+     * so the coordinator stays free of Android APIs and fully testable.
+     */
+    private val isAudibleSuppressed: () -> Boolean = { false }
 ) {
 
     private val log = DiagnosticLog.get(context)
@@ -94,10 +100,14 @@ class AlertCoordinator(
 
         var fired = false
         if (dueForRepeat && currentMessage.isNotBlank()) {
-            notifier.notify(currentMessage, settings)
+            val suppressed = isAudibleSuppressed()
+            notifier.notify(currentMessage, settings, suppressAudible = suppressed)
             lastAlertAtMillis = nowMillis
             fired = true
-            log.write("Evaluation: fired alert '$currentMessage'")
+            log.write(
+                "Evaluation: fired alert '$currentMessage'" +
+                    if (suppressed) " (audible suppressed)" else ""
+            )
         }
 
         return EvaluationResult(

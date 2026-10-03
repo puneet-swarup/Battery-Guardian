@@ -8,6 +8,12 @@ import com.puneet.batteryguardian.data.Settings
  * notifications, sound, TTS or vibration.
  */
 interface AlertSink {
-    fun notify(message: String, settings: Settings)
+    /**
+     * Delivers an alert. When [suppressAudible] is true, the notification is
+     * still shown but the sound, speech and vibration channels are skipped
+     * (quiet hours / Do Not Disturb).
+     */
+    fun notify(message: String, settings: Settings, suppressAudible: Boolean = false)
+
     fun release()
 }

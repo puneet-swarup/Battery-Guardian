@@ -23,7 +23,11 @@ import com.puneet.batteryguardian.battery.BatteryReader
 import com.puneet.batteryguardian.battery.BatterySnapshot
 import com.puneet.batteryguardian.battery.BatteryStatus
 import com.puneet.batteryguardian.core.BatteryHealth
+import com.puneet.batteryguardian.core.BatteryHistoryAnalyzer
+import com.puneet.batteryguardian.core.BatteryHistoryFormatter
+import com.puneet.batteryguardian.core.ChargeLimitResolver
 import com.puneet.batteryguardian.core.HealthLabel
+import com.puneet.batteryguardian.data.BatteryHistoryStore
 import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.databinding.ActivityMainBinding
@@ -98,6 +102,88 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, AboutActivity::class.java))
         }
         binding.checkUpdateButton.setOnClickListener { checkForUpdateManually() }
+        binding.historyButton.setOnClickListener { showHistoryDialog() }
+        binding.chargeLimitButton.setOnClickListener { showChargeLimitDialog() }
+    }
+
+    /** Shows the aggregated battery history summary. */
+    private fun showHistoryDialog() {
+        try {
+            val settings = settingsRepository.load()
+            val entries = BatteryHistoryStore(this).getAll()
+            val stats = BatteryHistoryAnalyzer.analyze(
+                entries,
+                highZoneThreshold = settings.idealZoneHighPercent,
+                lowZoneThreshold = settings.idealZoneLowPercent
+            )
+            val message = BatteryHistoryFormatter.format(
+                stats,
+                settings.idealZoneLowPercent,
+                settings.idealZoneHighPercent
+            )
+
+            AlertDialog.Builder(this)
+                .setTitle(R.string.history_dialog_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.ok, null)
+                .setNeutralButton(R.string.history_clear_button) { _, _ -> clearHistory() }
+                .show()
+        } catch (t: Throwable) {
+            log.writeException("showHistoryDialog", t)
+        }
+    }
+
+    private fun clearHistory() {
+        try {
+            BatteryHistoryStore(this).clear()
+            Toast.makeText(this, R.string.history_empty, Toast.LENGTH_SHORT).show()
+        } catch (t: Throwable) {
+            log.writeException("clearHistory", t)
+        }
+    }
+
+    /**
+     * Explains the device's charge-limit capability and, where supported,
+     * deep-links the user to the OEM battery settings screen. Android does not
+     * let third-party apps set the limit directly, so guidance is the honest
+     * implementation of this feature.
+     */
+    private fun showChargeLimitDialog() {
+        try {
+            val support = ChargeLimitResolver.resolve(Build.MANUFACTURER)
+
+            AlertDialog.Builder(this)
+                .setTitle(R.string.charge_limit_dialog_title)
+                .setMessage(support.guidance)
+                .setPositiveButton(R.string.ok, null)
+                .apply {
+                    if (support.settingsAction != null) {
+                        setNeutralButton(R.string.charge_limit_open_settings) { _, _ ->
+                            openBatterySettings()
+                        }
+                    }
+                }
+                .show()
+        } catch (t: Throwable) {
+            log.writeException("showChargeLimitDialog", t)
+        }
+    }
+
+    private fun openBatterySettings() {
+        val intents = listOf(
+            Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS),
+            Intent("android.settings.BATTERY_SAVER_SETTINGS"),
+            Intent(Settings.ACTION_SETTINGS)
+        )
+        for (intent in intents) {
+            try {
+                startActivity(intent)
+                return
+            } catch (_: Throwable) {
+                // Try the next fallback.
+            }
+        }
+        Toast.makeText(this, R.string.error_generic, Toast.LENGTH_SHORT).show()
     }
 
     private fun registerBatteryReceiver() {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="12dp"
+    android:background="@drawable/widget_background">
+
+    <TextView
+        android:id="@+id/widget_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_level_unknown"
+        android:textColor="#FFFFFF"
+        android:textSize="34sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/widget_not_charging"
+        android:textColor="#E0E0E0"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/widget_health"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="#B0BEC5"
+        android:textSize="11sp"
+        android:visibility="gone" />
+</LinearLayout>

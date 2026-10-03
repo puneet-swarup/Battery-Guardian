@@ -81,6 +81,29 @@ class AlertNotifierTest {
     }
 
     @Test
+    fun `suppressed alert still shows notification but skips audible channels`() {
+        shadowOf(application).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
+        notifier.notify(
+            "Battery is at 96%. Consider unplugging the charger.",
+            Settings(showNotification = true, playSound = true, vibrate = true, speakAlert = true),
+            suppressAudible = true
+        )
+        // Visual notification must still be posted even when audible is suppressed.
+        assertEquals(1, notifications().size())
+    }
+
+    @Test
+    fun `suppressed alert without notification enabled posts nothing`() {
+        shadowOf(application).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
+        notifier.notify(
+            "Battery is at 96%.",
+            Settings(showNotification = false, playSound = true, vibrate = true, speakAlert = true),
+            suppressAudible = true
+        )
+        assertEquals(0, notifications().size())
+    }
+
+    @Test
     fun `release shuts down cleanly`() {
         notifier.release()
         // Subsequent notifies must not crash after shutdown.

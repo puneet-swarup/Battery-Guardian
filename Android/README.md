@@ -81,8 +81,8 @@ Settings, Apps and notifications, Special app access, Install unknown apps.
 ## Testing overview
 
 Unit tests live in app/src/test and run entirely on the JVM — no device or
-emulator required, which makes them ideal for CI. The suite has **172 tests**
-across 19 classes, split into two flavours:
+emulator required, which makes them ideal for CI. The suite has **242 tests**
+across 27 classes, split into two flavours:
 
 **Plain JUnit tests** (fast, no Android framework):
 
@@ -92,9 +92,15 @@ across 19 classes, split into two flavours:
 | AlertStateTest | Active-message precedence and anyActive |
 | BatteryHealthTest | Health percentage, clamping and label boundaries |
 | SettingsTest | Snooze helpers, defaults and equality |
-| AlertCoordinatorTest | Repeat interval, snooze suppression, state transitions |
+| AlertCoordinatorTest | Repeat interval, snooze suppression, state transitions, audible suppression |
 | UpdateCheckerTest | Version tag parsing, comparison, UpdateInfo |
 | BatterySnapshotTest | Snapshot sentinels and value equality |
+| BatteryHistoryAnalyzerTest | History stats: min/max/avg, zone time, wear estimate |
+| BatteryHistoryFormatterTest | History summary text formatting |
+| QuietHoursScheduleTest | Quiet-hours window boundaries and midnight spanning |
+| QuietHoursEvaluatorTest | Quiet hours + DND suppression orchestration |
+| ChargeLimitResolverTest | Manufacturer to charge-limit guidance mapping |
+| WidgetStateTest | Home-screen widget presentation mapping |
 
 **Robolectric tests** (real Android framework classes on the JVM):
 
@@ -112,6 +118,7 @@ across 19 classes, split into two flavours:
 | MainActivityTest | Control wiring and monitoring labels |
 | SettingsActivityTest | Fragment hosting and up-navigation |
 | SettingsFragmentTest | Threshold + repeat-interval validation rules |
+| BatteryHistoryStoreTest | History file round-trip, rolling window, corrupt-file recovery |
 
 Run the full suite (this is what CI executes):
 
@@ -136,12 +143,15 @@ Instrumented (on-device) tests live in app/src/androidTest and run with:
 
 ## Architecture
 
-    core/       Pure logic (no Android deps) - AlertEvaluator, BatteryHealth
+    core/       Pure logic (no Android deps) - AlertEvaluator, BatteryHealth,
+                BatteryHistoryAnalyzer/Formatter, QuietHours*, ChargeLimitResolver
     battery/    BatteryManager + sysfs reads - BatteryReader, BatterySnapshot
-    data/       Settings, SettingsRepository (SharedPreferences), DiagnosticLog
+    data/       Settings, SettingsRepository (SharedPreferences), DiagnosticLog,
+                BatteryHistoryStore, QuietHours/DND providers
     notify/     Notification channels + AlertNotifier (toast/sound/speech/vibrate)
     service/    Foreground service, battery receiver, boot receiver, coordinator
     update/     GitHub release check + APK download/install
+    widget/     Home-screen widget - WidgetState (pure) + BatteryWidgetProvider
     ui/         MainActivity, SettingsActivity, AboutActivity
 
 The pure core/ and data/ layers have no Android dependencies and are the direct
