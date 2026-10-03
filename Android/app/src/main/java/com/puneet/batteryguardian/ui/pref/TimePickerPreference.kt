@@ -1,19 +1,24 @@
 package com.puneet.batteryguardian.ui.pref
 
-import android.app.TimePickerDialog
 import android.content.Context
 import android.content.res.TypedArray
-import android.text.format.DateFormat
 import android.util.AttributeSet
+import android.view.View
+import android.widget.NumberPicker
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.preference.Preference
 import com.puneet.batteryguardian.R
 import java.util.Locale
 
 /**
- * A preference that lets the user pick a time of day with the platform's native
- * time-picker dialog. The value is stored internally as minutes since local
- * midnight (the form the rest of the app uses), but the user only ever sees and
- * interacts with a familiar "HH:mm" clock — never a raw minute count.
+ * A preference that lets the user pick a time of day with a deliberately simple
+ * dialog: two number pickers (hours and minutes) separated by a colon.
+ *
+ * This intentionally avoids the Material clock-face picker, which is visually
+ * busy and clashes with the app's dark theme. The user only ever sees a familiar
+ * "HH:mm" value; internally the choice is stored as minutes since local midnight
+ * (the form the rest of the app uses).
  *
  * Persistence is owned by the hosting fragment (isPersistent = false), matching
  * [SliderInputPreference] and the rest of the settings screen.
@@ -46,7 +51,7 @@ class TimePickerPreference @JvmOverloads constructor(
         updateSummary()
     }
 
-    override fun onGetDefaultValue(a: TypedArray, index: Int): Any =
+    override fun onGetDefaultValue(a: TypedArray, index: Int): Int =
         a.getInt(index, 0)
 
     /** Current value as minutes since midnight. */
@@ -59,23 +64,54 @@ class TimePickerPreference @JvmOverloads constructor(
     }
 
     override fun onClick() {
-        val hours = currentMinutes / 60
-        val minutes = currentMinutes % 60
+        val dialogView = View.inflate(context, R.layout.dialog_time_picker, null)
+        val hourPicker = dialogView.findViewById<NumberPicker>(R.id.hourPicker)
+        val minutePicker = dialogView.findViewById<NumberPicker>(R.id.minutePicker)
 
-        val dialog = TimePickerDialog(
-            context,
-            { _, pickedHour, pickedMinute ->
-                val newMinutes = pickedHour * 60 + pickedMinute
+        configurePicker(hourPicker, 0, 23, currentMinutes / 60)
+        configurePicker(minutePicker, 0, 59, currentMinutes % 60)
+
+        AlertDialog.Builder(context)
+            .setTitle(title)
+            .setView(dialogView)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val newMinutes = hourPicker.value * 60 + minutePicker.value
                 // Let the fragment validate cross-field rules (start != end).
                 if (callChangeListener(newMinutes)) {
                     setValue(newMinutes)
                 }
-            },
-            hours,
-            minutes,
-            DateFormat.is24HourFormat(context)
-        )
-        dialog.show()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Sets up a NumberPicker with a range and initial value, and forces the
+     * wheel text to the app's light foreground colour so it stays readable on
+     * the dark dialog surface. The dividers are tinted subtly.
+     */
+    private fun configurePicker(picker: NumberPicker, min: Int, max: Int, value: Int) {
+        picker.minValue = min
+        picker.maxValue = max
+        picker.value = value
+        picker.wrapSelectorWheel = true
+        picker.descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
+
+        val light = context.getResources().getColor(R.color.text_primary, context.theme)
+        tintPickerChildren(picker, light)
+    }
+
+    /**
+     * NumberPicker does not expose its inner EditText, so we walk the child views
+     * and recolour the text (and soften the divider) for the dark theme.
+     */
+    private fun tintPickerChildren(picker: NumberPicker, color: Int) {
+        for (i in 0 until picker.childCount) {
+            val child = picker.getChildAt(i)
+            if (child is TextView) {
+                child.setTextColor(color)
+            }
+        }
     }
 
     private fun updateSummary() {
