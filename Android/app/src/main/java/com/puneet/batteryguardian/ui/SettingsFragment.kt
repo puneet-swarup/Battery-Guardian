@@ -11,6 +11,7 @@ import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.Settings
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.ui.pref.SliderInputPreference
+import com.puneet.batteryguardian.ui.pref.TimePickerPreference
 
 /**
  * Preference screen backed by [SettingsRepository]. Reads current values into
@@ -46,10 +47,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         bindSwitch("quiet_hours_enabled", current.quietHoursEnabled) { v ->
             save { it.copy(quietHoursEnabled = v) }
         }
-        bindIntEdit("quiet_hours_start", current.quietHoursStartMinutes, MINUTES_MIN, MINUTES_MAX) { v ->
+        bindTimePicker("quiet_hours_start", current.quietHoursStartMinutes) { v ->
             save { it.copy(quietHoursStartMinutes = v) }
         }
-        bindIntEdit("quiet_hours_end", current.quietHoursEndMinutes, MINUTES_MIN, MINUTES_MAX) { v ->
+        bindTimePicker("quiet_hours_end", current.quietHoursEndMinutes) { v ->
             save { it.copy(quietHoursEndMinutes = v) }
         }
         bindSwitch("respect_dnd", current.respectDoNotDisturb) { v ->
@@ -115,25 +116,23 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     /**
-     * Binds an EditTextPreference holding an integer within [min]..[max].
-     * Invalid or out-of-range input is rejected and the previous value kept.
+     * Binds a [TimePickerPreference] backed by minutes-since-midnight. The user
+     * interacts with a native clock dialog ("HH:mm"); the stored value stays in
+     * minutes so the rest of the app is unchanged. Rejects a selection that would
+     * make the quiet-hours window start and end at the same time.
      */
-    private fun bindIntEdit(
-        key: String,
-        current: Int,
-        min: Int,
-        max: Int,
-        onChange: (Int) -> Unit
-    ) {
-        findPreference<EditTextPreference>(key)?.apply {
-            text = current.toString()
-            summary = current.toString()
-            setOnBindEditTextListener { it.setSelectAllOnFocus(true) }
-            setOnPreferenceChangeListener { pref, newValue ->
-                val v = (newValue as? String)?.trim()?.toIntOrNull()
-                    ?: return@setOnPreferenceChangeListener false
-                if (v < min || v > max) return@setOnPreferenceChangeListener false
-                (pref as EditTextPreference).summary = v.toString()
+    private fun bindTimePicker(key: String, currentMinutes: Int, onChange: (Int) -> Unit) {
+        findPreference<TimePickerPreference>(key)?.apply {
+            setValue(currentMinutes)
+            setOnPreferenceChangeListener { _, newValue ->
+                val v = (newValue as? Int) ?: return@setOnPreferenceChangeListener false
+                val settings = repository.load()
+                val conflict = when (key) {
+                    "quiet_hours_start" -> v == settings.quietHoursEndMinutes
+                    "quiet_hours_end" -> v == settings.quietHoursStartMinutes
+                    else -> false
+                }
+                if (conflict) return@setOnPreferenceChangeListener false
                 onChange(v)
                 true
             }
@@ -197,9 +196,4 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    companion object {
-        // Minutes-since-midnight bounds for the quiet-hours window fields.
-        private const val MINUTES_MIN = 0
-        private const val MINUTES_MAX = 24 * 60 - 1
-    }
 }
