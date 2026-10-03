@@ -6,4 +6,9 @@
         <attr name="sliderMax" format="integer" />
         <attr name="sliderSuffix" format="string" />
     </declare-styleable>
+
+    <!-- Custom attributes for the TimePickerPreference (native clock dialog). -->
+    <declare-styleable name="TimePickerPreference">
+        <attr name="timeDefault" format="integer" />
+    </declare-styleable>
 </resources>

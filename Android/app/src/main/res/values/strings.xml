@@ -122,10 +122,10 @@
     <string name="settings_quiet_category">Quiet hours</string>
     <string name="settings_quiet_enabled_title">Enable quiet hours</string>
     <string name="settings_quiet_enabled_summary">Silence sound and speech during a daily window</string>
-    <string name="settings_quiet_start_title">Quiet hours start (minutes past midnight)</string>
-    <string name="settings_quiet_start_summary">e.g. 1320 for 22:00</string>
-    <string name="settings_quiet_end_title">Quiet hours end (minutes past midnight)</string>
-    <string name="settings_quiet_end_summary">e.g. 420 for 07:00</string>
+    <string name="settings_quiet_start_title">Quiet hours start</string>
+    <string name="settings_quiet_start_summary">When quiet hours begin each day</string>
+    <string name="settings_quiet_end_title">Quiet hours end</string>
+    <string name="settings_quiet_end_summary">When quiet hours end each day</string>
     <string name="settings_respect_dnd_title">Respect Do Not Disturb</string>
     <string name="settings_respect_dnd_summary">Also silence audible alerts while DND is active</string>
 

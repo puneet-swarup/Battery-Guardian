@@ -187,7 +187,7 @@ The debug APK is written to `Android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ### Android testing
 
-The Android app has **242 JVM unit tests across 27 classes** (plain JUnit + Robolectric) — no device or emulator required, so they run in CI. Coverage is generated with JaCoCo via `build.bat coverage`.
+The Android app has **249 JVM unit tests across 28 classes** (plain JUnit + Robolectric) — no device or emulator required, so they run in CI. Coverage is generated with JaCoCo via `build.bat coverage`.
 
 See the [Android testing overview](Android/README.md#testing-overview) for the full class-by-class breakdown.
 
@@ -213,7 +213,7 @@ dotnet test
 
 Or from Visual Studio: Test → Run All Tests (Ctrl + R, A).
 
-**Android (Kotlin):** run `cd Android` then `build.bat test` (242 JVM unit tests) or `build.bat coverage` (tests + JaCoCo coverage report). No device or emulator needed.
+**Android (Kotlin):** run `cd Android` then `build.bat test` (249 JVM unit tests) or `build.bat coverage` (tests + JaCoCo coverage report). No device or emulator needed.
 
 All tests must pass before submitting a pull request.
 

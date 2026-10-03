@@ -68,19 +68,17 @@
             app:summary="@string/settings_quiet_enabled_summary"
             app:defaultValue="false" />
 
-        <EditTextPreference
+        <com.puneet.batteryguardian.ui.pref.TimePickerPreference
             app:key="quiet_hours_start"
             app:title="@string/settings_quiet_start_title"
-            app:summary="@string/settings_quiet_start_summary"
             app:defaultValue="1320"
-            app:dialogTitle="@string/settings_quiet_start_title" />
+            app:timeDefault="1320" />
 
-        <EditTextPreference
+        <com.puneet.batteryguardian.ui.pref.TimePickerPreference
             app:key="quiet_hours_end"
             app:title="@string/settings_quiet_end_title"
-            app:summary="@string/settings_quiet_end_summary"
             app:defaultValue="420"
-            app:dialogTitle="@string/settings_quiet_end_title" />
+            app:timeDefault="420" />
 
         <SwitchPreferenceCompat
             app:key="respect_dnd"
