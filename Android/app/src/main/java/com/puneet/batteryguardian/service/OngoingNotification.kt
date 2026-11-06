@@ -22,6 +22,9 @@ object OngoingNotification {
     private const val REQ_STOP = 2002
     private const val REQ_SNOOZE = 2003
 
+    /** Default snooze duration applied when the action is tapped from the shade. */
+    private const val DEFAULT_SNOOZE_MINUTES = 30
+
     fun build(context: Context, snapshot: BatterySnapshot): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -32,17 +35,25 @@ object OngoingNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val stopIntent = PendingIntent.getService(
+        // Use getForegroundService(): a notification action is handled from a
+        // background context, and the target is a foreground service. Plain
+        // getService() throws IllegalStateException on Android 8+ background
+        // starts, which is why Snooze/Stop previously appeared unresponsive.
+        val stopIntent = PendingIntent.getForegroundService(
             context,
             REQ_STOP,
             Intent(context, BatteryMonitorService::class.java).setAction(BatteryMonitorService.ACTION_STOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val snoozeIntent = PendingIntent.getService(
+        // Carry the default snooze duration explicitly so behaviour is
+        // deterministic and independent of the service-side fallback.
+        val snoozeIntent = PendingIntent.getForegroundService(
             context,
             REQ_SNOOZE,
-            Intent(context, BatteryMonitorService::class.java).setAction(BatteryMonitorService.ACTION_SNOOZE),
+            Intent(context, BatteryMonitorService::class.java)
+                .setAction(BatteryMonitorService.ACTION_SNOOZE)
+                .putExtra(BatteryMonitorService.EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 

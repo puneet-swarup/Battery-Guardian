@@ -47,3 +47,34 @@ Android/.kotlin/
 Android/keystore.properties
 
 .forge-permissions.json
+
+# Forge Agent session memory (never commit)
+SESSION_CONTEXT.md
+
+# Stray Chromium/Chrome browser profile accidentally created in the repo root
+# (History, Login Data, caches). Never commit these.
+Crashpad/
+Default/
+GPUPersistentCache/
+GrShaderCache/
+ShaderCache/
+Variations/
+Variations
+component_crx_cache/
+extensions_crx_cache/
+segmentation_platform/
+first_party_sets.db
+first_party_sets.db-journal
+BrowserMetrics-spare.pma
+Last Browser
+Last Version
+Local State
+
+# One-off local helper scripts (not part of the build)
+Android/findjdk.js
+Android/lintcount.js
+Android/lintcount_out.txt
+Android/run_lint.bat
+Android/run_lint_clean.bat
+Android/run_tests_jdk17.bat
+Android/runnode.bat

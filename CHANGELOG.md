@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-06
+
+### Summary
+- Fixes the Android Snooze/Stop notification actions, adds a notification-health banner and a monitoring watchdog (Phase 2), and expands the Android test suite to 280 tests.
+
+
+### Fixed (Android)
+- Notification Snooze/Stop buttons now respond when tapped from the shade. They previously started the monitor service with `PendingIntent.getService()`, which cannot legally launch a foreground service from a background context and threw an uncaught `IllegalStateException`, so the taps appeared dead (reported on a Lenovo Tab M10, Android 10). They now use `PendingIntent.getForegroundService()`, and the service posts its foreground notification before acting so it satisfies the foreground-start contract. Snooze also carries an explicit duration so its behaviour is deterministic. No change to phone behaviour.
+
+### Added (Android)
+- Notification health diagnostics. New `NotificationHealthChecker` reports when app notifications are disabled, either channel is blocked (importance NONE), or the app is not exempt from battery optimisation - the silent conditions that made alerts vanish on tablets. Additive, read-only, no behaviour change.
+- Service action plan. The `onStartCommand` dispatch is factored into a pure `ServiceActionPlan` so START/STOP/SNOOZE resolution and snooze-duration defaults are unit-testable without constructing the Android service.
+- Notification health banner (Phase 2). The main screen now shows a dismissible advisory banner for the highest-priority silent-failure condition, with a fix-it action that deep-links to app notification settings, the specific channel settings, or the battery-optimisation exemption dialog (falling back gracefully when a deep link is unavailable). Pure presentation logic lives in HealthBannerPresenter.
+- Monitoring watchdog (Phase 2). ServiceWatchdog compares the desired monitoring state with the service live running flag on every resume and restarts a service that OEM battery management killed, or stops one the user turned off.
+
+### Tests (Android)
+- Added `OngoingNotificationActionsTest` (both CTAs target the monitor service via foreground-service pending intents; snooze carries a positive duration), `ServiceActionPlanTest` (action resolution and snooze defaults), `NotificationHealthCheckerTest` (disabled notifications, blocked channels, exemption detection), `HealthBannerPresenterTest` (banner priority order, channel targeting, fall-through) and `ServiceWatchdogTest` (restart/stop/no-op decisions). Suite is now 280 tests across 33 classes, all passing.
+
+### Docs (Android)
+- README gains a tablet-troubleshooting section (notifications disabled, channel blocked, battery optimisation, missing TTS data), a note on the Snooze/Stop fix, and a new section documenting the Phase 2 notification-health banner and service watchdog.
+
 ## [2.1.2] - 2026-10-03
 
 ### Changed (Android)

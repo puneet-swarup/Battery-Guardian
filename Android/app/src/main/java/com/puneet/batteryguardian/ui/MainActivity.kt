@@ -29,6 +29,10 @@ import com.puneet.batteryguardian.core.ChargeLimitResolver
 import com.puneet.batteryguardian.core.HealthLabel
 import com.puneet.batteryguardian.data.BatteryHistoryStore
 import com.puneet.batteryguardian.data.DiagnosticLog
+import com.puneet.batteryguardian.notify.NotificationChannels
+import com.puneet.batteryguardian.notify.NotificationHealthChecker
+import com.puneet.batteryguardian.service.ServiceWatchdog
+import com.puneet.batteryguardian.service.WatchdogAction
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.databinding.ActivityMainBinding
 import com.puneet.batteryguardian.service.BatteryMonitorService
@@ -72,6 +76,8 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         registerBatteryReceiver()
         refreshUi(batteryReader.read())
+        refreshHealthBanner()
+        runWatchdog()
     }
 
     override fun onPause() {
@@ -104,6 +110,8 @@ class MainActivity : AppCompatActivity() {
         binding.checkUpdateButton.setOnClickListener { checkForUpdateManually() }
         binding.historyButton.setOnClickListener { showHistoryDialog() }
         binding.chargeLimitButton.setOnClickListener { showChargeLimitDialog() }
+        binding.healthBannerDismiss.setOnClickListener { binding.healthBanner.visibility = View.GONE }
+        binding.healthBannerAction.setOnClickListener { onHealthBannerAction() }
     }
 
     /** Shows the aggregated battery history summary. */
@@ -272,7 +280,7 @@ class MainActivity : AppCompatActivity() {
             HealthLabel.POOR -> R.string.health_poor
             HealthLabel.UNAVAILABLE -> R.string.health_unavailable
         }
-        binding.healthValue.text = String.format(Locale.US, "%d%% · %s", pct, getString(labelRes))
+        binding.healthValue.text = String.format(Locale.US, "%d%% \u00B7 %s", pct, getString(labelRes))
         binding.healthDetail.visibility = View.VISIBLE
         binding.healthDetail.text = String.format(
             Locale.US,
@@ -396,6 +404,94 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (t: Throwable) {
             log.writeException("openUrl", t)
+        }
+    }
+
+    // ---- Phase 2: notification-health banner ----
+
+    // Inspects device health and shows the highest-priority banner. The banner is
+    // purely advisory; it never blocks the normal ui.
+    private fun refreshHealthBanner() {
+        try {
+            val issues = NotificationHealthChecker.detect(this)
+            val banner = HealthBannerPresenter.present(this, issues)
+            if (banner == null) {
+                binding.healthBanner.visibility = View.GONE
+                return
+            }
+            binding.healthBannerTitle.text = banner.title
+            binding.healthBannerMessage.text = banner.message
+            binding.healthBannerAction.text = banner.actionLabel
+            binding.healthBannerAction.tag = banner
+            binding.healthBanner.visibility = View.VISIBLE
+        } catch (t: Throwable) {
+            log.writeException("refreshHealthBanner", t)
+        }
+    }
+
+    // Executes the fix-it action chosen by the presenter.
+    private fun onHealthBannerAction() {
+        val banner = binding.healthBannerAction.tag as? HealthBanner ?: return
+        when (banner.action) {
+            BannerAction.OPEN_APP_NOTIFICATION_SETTINGS -> openAppNotificationSettings()
+            BannerAction.OPEN_CHANNEL_SETTINGS ->
+                openChannelNotificationSettings(banner.channelId ?: NotificationChannels.ALERTS)
+            BannerAction.REQUEST_BATTERY_EXEMPTION -> requestBatteryExemption()
+            BannerAction.NONE -> Unit
+        }
+    }
+
+    private fun openAppNotificationSettings() {
+        try {
+            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+            startActivity(intent)
+        } catch (t: Throwable) {
+            log.writeException("openAppNotificationSettings", t)
+            // Fall back to the general notification settings screen.
+            try {
+                startActivity(Intent("android.settings.NOTIFICATION_SETTINGS"))
+            } catch (_: Throwable) {
+                Toast.makeText(this, R.string.error_generic, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun openChannelNotificationSettings(channelId: String) {
+        try {
+            val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+            intent.putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channelId)
+            startActivity(intent)
+        } catch (t: Throwable) {
+            log.writeException("openChannelNotificationSettings", t)
+            // Fall back to the app-level notification settings.
+            openAppNotificationSettings()
+        }
+    }
+
+    // ---- Phase 2: service watchdog ----
+
+    // Compares the user's desired monitoring state with the service's actual
+    // running state and corrects any drift (for example, the service killed by
+    // aggressive OEM battery management). Runs on every resume, so a return to
+    // the app recovers a dead watchman.
+    private fun runWatchdog() {
+        try {
+            val desired = settingsRepository.load().monitoringEnabled
+            // iNRunning is set by the service itself on start/stop. A mismatch means
+            // the OS terminated the service without our consent.
+            val running = BatteryMonitorService.isRunning
+            when (ServiceWatchdog.resolve(desired, running)) {
+                WatchdogAction.RESTART_SERVICE -> {
+                    BatteryMonitorService.start(this)
+                    Toast.makeText(this, R.string.health_service_restarted, Toast.LENGTH_SHORT).show()
+                }
+                WatchdogAction.STOP_SERVICE -> BatteryMonitorService.stop(this)
+                WatchdogAction.NONE -> Unit
+            }
+        } catch (t: Throwable) {
+            log.writeException("runWatchdog", t)
         }
     }
 }

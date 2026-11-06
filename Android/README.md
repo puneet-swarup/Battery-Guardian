@@ -81,8 +81,8 @@ Settings, Apps and notifications, Special app access, Install unknown apps.
 ## Testing overview
 
 Unit tests live in app/src/test and run entirely on the JVM — no device or
-emulator required, which makes them ideal for CI. The suite has **249 tests**
-across 28 classes, split into two flavours:
+emulator required, which makes them ideal for CI. The suite has **280 tests**
+across 33 classes, split into two flavours:
 
 **Plain JUnit tests** (fast, no Android framework):
 
@@ -93,6 +93,8 @@ across 28 classes, split into two flavours:
 | BatteryHealthTest | Health percentage, clamping and label boundaries |
 | SettingsTest | Snooze helpers, defaults and equality |
 | AlertCoordinatorTest | Repeat interval, snooze suppression, state transitions, audible suppression |
+| ServiceWatchdogTest | Desired-vs-actual monitoring state: restart/stop/none |
+| ServiceActionPlanTest | onStartCommand dispatch: START/STOP/SNOOZE resolution and snooze-duration defaults |
 | UpdateCheckerTest | Version tag parsing, comparison, UpdateInfo |
 | BatterySnapshotTest | Snapshot sentinels and value equality |
 | BatteryHistoryAnalyzerTest | History stats: min/max/avg, zone time, wear estimate |
@@ -113,6 +115,9 @@ across 28 classes, split into two flavours:
 | SettingsRepositoryTest | SharedPreferences round-trip |
 | DiagnosticLogTest | File-backed logging and the enabled gate |
 | OngoingNotificationTest | Foreground notification + channel creation |
+| OngoingNotificationActionsTest | Snooze/Stop CTA wiring: actions target the monitor service via foreground-service pending intents, snooze carries a positive duration |
+| HealthBannerPresenterTest | Maps health issues to banner text + fix-it action (priority order) |
+| NotificationHealthCheckerTest | Detects disabled notifications, blocked channels and missing battery-optimisation exemption |
 | ApkInstallerTest | Install-permission gate and failure path |
 | UpdateCheckReceiverTest | Auto-update-disabled early return |
 | AboutActivityTest | Version label, GitHub button, up-navigation |
@@ -187,6 +192,32 @@ If spoken alerts do not fire, enable **Settings → Diagnostic logging** and che
 - `TTS not ready; queued speech for later` — an alert arrived during engine startup;
   it is spoken automatically once ready.
 
+### Troubleshooting missing alerts on tablets (e.g. Lenovo Tab M10, Android 10)
+
+If no notification or voice alert appears on a tablet, the cause is almost
+never SDK incompatibility (the app supports Android 9+). Instead:
+
+- Notifications disabled / channel blocked. Many OEM ROMs disable
+  notifications for sideloaded apps by default. Use `NotificationHealthChecker`
+  (surfaced in the UI) or check Settings → Apps → Battery Guardian →
+  Notifications and ensure both channels (Battery alerts, Monitoring
+  service) are enabled and not set to Silent.
+- Battery optimisation killing the watchdog. Exempt the app: Settings →
+  Battery → Battery optimisation → Battery Guardian → Don't optimise (the
+  main-screen button opens the right screen).
+- No TTS engine data. If voice is missing but the notification works,
+  install/update the device's Text-to-speech engine and pick a language under
+  Settings → System → Languages & input → Text-to-speech output.
+- Enable Settings → Diagnostic logging and inspect `diagnostic.log` for the
+  exact reason (the app records every skipped alert).
+
+### Notification Snooze / Stop buttons
+
+These buttons must start the foreground service from a background context, so
+they use `PendingIntent.getForegroundService()` (not `getService()`). Using the
+latter caused an uncaught background-start exception, which made the buttons
+appear unresponsive — fixed and covered by `OngoingNotificationActionsTest`.
+
 ## Notes on Android 9 behaviour
 
 - Monitoring runs in a foreground service with an ongoing notification
@@ -195,3 +226,44 @@ If spoken alerts do not fire, enable **Settings → Diagnostic logging** and che
   capacity. When it cannot be read, the health card hides itself.
 - The app should be exempted from battery optimisation for reliable background
   monitoring (button on the main screen).
+
+## Notification health banner and service watchdog (Phase 2)
+
+The main screen now shows a dismissible advisory banner when the app detects a
+condition that would silently suppress alerts, and a watchdog recovers a
+monitoring service killed by the OS.
+
+### Notification health banner
+
+`NotificationHealthChecker` inspects the device and reports issues; the pure
+`HealthBannerPresenter` turns the highest-priority issue into banner text and a
+fix-it action. The banner is advisory only and never blocks normal use. Issues
+are ranked:
+
+1. `NOTIFICATIONS_DISABLED` - nothing posts at all. The fix-it button opens the
+   app-level notification settings screen.
+2. `ALERT_CHANNEL_BLOCKED` - the alerts channel is silenced. Opens the channel
+   settings for `bg_alerts`.
+3. `SERVICE_CHANNEL_BLOCKED` - the ongoing notification is hidden. Opens the
+   channel settings for `bg_service`.
+4. `NOT_EXEMPT_FROM_BATTERY_OPTIMIZATION` - Doze may kill the service. Opens the
+   system exemption dialog.
+
+If a deep link is unavailable the code falls back to the general notification
+settings screen (or an app-level screen for channel links) rather than failing.
+
+### Service watchdog
+
+`ServiceWatchdog` compares the user's desired monitoring state with the service's
+actual in-process running state (`BatteryMonitorService.isRunning`, set on
+start/stop). On every `onResume` the main screen resolves:
+
+- desired and not running -> restart the service (with a toast);
+- not desired but running -> stop the service;
+- otherwise -> no-op.
+
+This recovers monitoring after an OEM battery manager terminates the foreground
+service, without ever fighting a user who deliberately turned monitoring off.
+
+Covered by `HealthBannerPresenterTest` (priority order, channel targeting,
+fall-through) and `ServiceWatchdogTest` (restart / stop / no-op decisions).

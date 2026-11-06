@@ -133,4 +133,16 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="error_generic">Something went wrong.</string>
+<!-- Notification health banner (Phase 2) -->
+    <string name="health_notifications_disabled_title">Notifications are turned off</string>
+    <string name="health_notifications_disabled_message">Battery Guardian can\'t show alerts while notifications are disabled. Tap to enable them.</string>
+    <string name="health_channel_blocked_title">Notification channel is blocked</string>
+    <string name="health_channel_blocked_message">The channel Battery Guardian uses for alerts is silenced. Tap to open its settings.</string>
+    <string name="health_battery_opt_title">Battery optimisation may stop monitoring</string>
+    <string name="health_battery_opt_message">Exempt Battery Guardian from battery optimisation so the watchdog keeps running.</string>
+    <string name="health_fix_button">Fix it</string>
+    <string name="health_dismiss">Dismiss</string>
+    <string name="health_tts_missing_title">Text-to-speech is not available</string>
+    <string name="health_tts_missing_message">Spoken alerts are enabled, but no TTS engine is installed. Install one or turn off \'Speak alert\'.</string>
+    <string name="health_service_restarted">Monitoring service was restarted</string>
 </resources>

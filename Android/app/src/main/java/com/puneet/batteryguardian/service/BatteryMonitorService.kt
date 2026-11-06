@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.puneet.batteryguardian.battery.BatteryReader
 import com.puneet.batteryguardian.data.DiagnosticLog
@@ -76,23 +75,54 @@ class BatteryMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_STOP -> {
+        val rawSnooze = intent?.getIntExtra(EXTRA_SNOOZE_MINUTES, ServiceActionPlan.DEFAULT_SNOOZE_MINUTES)
+            ?: ServiceActionPlan.DEFAULT_SNOOZE_MINUTES
+        val plan = ServiceActionPlan.resolve(intent?.action, rawSnooze)
+
+        when (plan.action) {
+            ServiceAction.STOP -> {
+                // Arrived via PendingIntent.getForegroundService() from the
+                // notification shade. Android requires startForeground() to be
+                // called promptly even for a stop request, otherwise it raises
+                // RemoteServiceException and kills the process. Post the
+                // notification first, then tear everything down.
+                ensureForeground()
                 stopMonitoring()
                 return START_NOT_STICKY
             }
-            ACTION_SNOOZE -> {
+            ServiceAction.SNOOZE -> {
                 // Honour the duration chosen in the UI; fall back to the default
                 // when the extra is missing or nonsensical.
-                val requested = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
-                val minutes = if (requested > 0) requested else DEFAULT_SNOOZE_MINUTES
-                snooze(minutes)
+                // Same foreground-contract requirement as STOP.
+                ensureForeground()
+                snooze(plan.snoozeMinutes)
+                return START_STICKY
+            }
+            ServiceAction.START -> {
+                startMonitoring()
                 return START_STICKY
             }
         }
+    }
 
-        startMonitoring()
-        return START_STICKY
+    /**
+     * Guarantees the service is in the foreground state. Called on the action
+     * paths because a start initiated by PendingIntent.getForegroundService()
+     * obliges the service to call startForeground() within a few seconds, or
+     * the OS raises RemoteServiceException and kills the process.
+     *
+     * Safe to call repeatedly: re-posting the same notification id simply
+     * updates the existing foreground notification. Never throws.
+     */
+    private fun ensureForeground() {
+        try {
+            startForeground(
+                OngoingNotification.NOTIF_ID_SERVICE,
+                OngoingNotification.build(this, batteryReader.read())
+            )
+        } catch (t: Throwable) {
+            log.writeException("ensureForeground", t)
+        }
     }
 
     private fun startMonitoring() {
@@ -126,6 +156,7 @@ class BatteryMonitorService : Service() {
 
             settingsRepository.setMonitoringEnabled(true)
             started = true
+            isRunning = true
             log.write("Monitoring started")
         }
 
@@ -190,6 +221,7 @@ class BatteryMonitorService : Service() {
         coordinator.reset()
         settingsRepository.setMonitoringEnabled(false)
         started = false
+        isRunning = false
         log.write("Monitoring stopped")
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -216,8 +248,15 @@ class BatteryMonitorService : Service() {
         const val ACTION_STOP = "com.puneet.batteryguardian.action.STOP"
         const val ACTION_SNOOZE = "com.puneet.batteryguardian.action.SNOOZE"
         const val EXTRA_SNOOZE_MINUTES = "minutes"
-        private const val DEFAULT_SNOOZE_MINUTES = 30
         private const val HISTORY_WRITE_INTERVAL_MILLIS = 5 * 60 * 1000L
+
+        // Live running flag observable by the activity watchdog. True while the
+        // foreground monitor is active in this process. Used to detect a service
+        // killed by aggressive OEM battery management while the app was in
+        // the background.
+        @Volatile
+        var isRunning: Boolean = false
+            private set
 
         fun start(context: Context) {
             val intent = Intent(context, BatteryMonitorService::class.java).setAction(ACTION_START)
@@ -225,9 +264,12 @@ class BatteryMonitorService : Service() {
         }
 
         fun stop(context: Context) {
+            // Start via startForegroundService so the service may legally call
+            // startForeground() from a background context (e.g. after the
+            // process was reclaimed while monitoring was active).
             val intent = Intent(context, BatteryMonitorService::class.java).setAction(ACTION_STOP)
             try {
-                context.startService(intent)
+                ContextCompat.startForegroundService(context, intent)
             } catch (_: Throwable) {
             }
         }
@@ -236,7 +278,7 @@ class BatteryMonitorService : Service() {
             val intent = Intent(context, BatteryMonitorService::class.java).setAction(ACTION_SNOOZE)
             intent.putExtra(EXTRA_SNOOZE_MINUTES, minutes)
             try {
-                context.startService(intent)
+                ContextCompat.startForegroundService(context, intent)
             } catch (_: Throwable) {
             }
         }
