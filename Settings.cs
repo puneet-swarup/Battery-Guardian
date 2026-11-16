@@ -2,46 +2,38 @@ using System;
 
 namespace BatteryGuardian
 {
-    /// <summary>
-    /// Persisted user configuration for the Windows application.
-    /// Property defaults are chosen so a missing JSON field yields sensible
-    /// behaviour (System.Text.Json leaves absent properties at their defaults).
-    /// </summary>
-    public class Settings
-    {
-        public int HighBatteryThreshold { get; set; } = 95;
-        public int LowBatteryThreshold { get; set; } = 15;
-        public int AlertRepeatIntervalSeconds { get; set; } = 300;
-        public bool CheckForUpdatesAutomatically { get; set; } = true;
-        public DateTime? LastUpdateCheckUtc { get; set; } = null;
-        public bool DiagnosticLoggingEnabled { get; set; } = false;
-        public DateTime? SnoozedUntilUtc { get; set; } = null;
+ /// <summary>
+ /// Persisted user configuration for the Windows application.
+ /// </summary>
+ public class Settings
+ {
+ public int HighBatteryThreshold { get; set; } = 95;
+ public int LowBatteryThreshold { get; set; } = 15;
+ public int AlertRepeatIntervalSeconds { get; set; } = 300;
+ public bool CheckForUpdatesAutomatically { get; set; } = true;
+ public DateTime? LastUpdateCheckUtc { get; set; } = null;
+ public bool DiagnosticLoggingEnabled { get; set; } = false;
+ public DateTime? SnoozedUntilUtc { get; set; } = null;
 
-        // ---- Battery history (feature 1) ----
-        /// <summary>When true, periodic readings are recorded for trend analysis.</summary>
-        public bool HistoryEnabled { get; set; } = true;
+ public bool HistoryEnabled { get; set; } = true;
+ public int IdealZoneLowPercent { get; set; } = 20;
+ public int IdealZoneHighPercent { get; set; } = 80;
 
-        /// <summary>Lower edge of the "ideal" charge window used by the analyzer.</summary>
-        public int IdealZoneLowPercent { get; set; } = 20;
+ public bool QuietHoursEnabled { get; set; } = false;
+ public int QuietHoursStartMinutes { get; set; } = 22 * 60;
+ public int QuietHoursEndMinutes { get; set; } = 7 * 60;
+ public bool RespectFocusAssist { get; set; } = true;
 
-        /// <summary>Upper edge of the "ideal" charge window used by the analyzer.</summary>
-        public int IdealZoneHighPercent { get; set; } = 80;
+ public int LastAppliedChargeLimitPercent { get; set; } = 0;
 
-        // ---- Quiet hours / DND (feature 5) ----
-        /// <summary>When true, the user-defined quiet-hours window is honoured.</summary>
-        public bool QuietHoursEnabled { get; set; } = false;
-
-        /// <summary>Quiet-hours start, minutes since local midnight.</summary>
-        public int QuietHoursStartMinutes { get; set; } = 22 * 60; // 22:00
-
-        /// <summary>Quiet-hours end, minutes since local midnight.</summary>
-        public int QuietHoursEndMinutes { get; set; } = 7 * 60;    // 07:00
-
-        /// <summary>Suppress audible alerts while Windows Focus Assist is on.</summary>
-        public bool RespectFocusAssist { get; set; } = true;
-
-        // ---- Charge limit (feature 14) ----
-        /// <summary>Last charge limit the user applied, for display (0 = never set).</summary>
-        public int LastAppliedChargeLimitPercent { get; set; } = 0;
-    }
+ // ---- Smart plug (Tuya) ----
+ public bool SmartPlugEnabled { get; set; } = false;
+ public int SmartPlugHighThreshold { get; set; } = 95;
+ public int SmartPlugLowThreshold { get; set; } = 15;
+ public string SmartPlugDeviceId { get; set; } = string.Empty;
+ public string SmartPlugHost { get; set; } = string.Empty;
+ public int SmartPlugPort { get; set; } = 6668;
+ public int SmartPlugRelayDp { get; set; } = 1;
+ public string SmartPlugProtocolVersion { get; set; } = "3.5";
+ }
 }

@@ -14,6 +14,7 @@ using System.Reflection;
 using BatteryGuardian.History;
 using BatteryGuardian.QuietHours;
 using BatteryGuardian.ChargeLimit;
+using BatteryGuardian.SmartPlug;
 
 namespace BatteryGuardian
 {
@@ -45,6 +46,8 @@ namespace BatteryGuardian
 
         private Settings _settings = null!;
         private BatteryHealthInfo? _batteryHealth;
+ private SmartPlugController? _smartPlugController;
+ private readonly TuyaCredentialStore _smartPlugCredStore = new TuyaCredentialStore();
 
         private readonly DispatcherTimer _refreshTimer;
         private readonly DispatcherTimer _alarmTimer;
@@ -801,6 +804,7 @@ namespace BatteryGuardian
 
                 RecordHistory(status.BatteryLifePercent, isOnAcPower);
                 EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
+ _ = EvaluateSmartPlugAsync(status.BatteryLifePercent, true);
             }
             else
             {
@@ -1048,7 +1052,35 @@ namespace BatteryGuardian
             _alarmTimer.Start();
         }
 
-        private void ShowToastNotification(string title, string message)
+        private async Task EvaluateSmartPlugAsync(int batteryPercent, bool known)
+ {
+ try
+ {
+ if (!_settings.SmartPlugEnabled) return;
+ var controller = EnsureSmartPlugController();
+ if (controller == null) return;
+ await controller.EvaluateAsync(known ? batteryPercent : -1);
+ }
+ catch (Exception ex) { DiagnosticLog.WriteException("EvaluateSmartPlugAsync", ex); }
+ }
+
+ private SmartPlugController? EnsureSmartPlugController()
+ {
+ if (!_settings.SmartPlugEnabled) { _smartPlugController?.Dispose(); _smartPlugController = null; return null; }
+ var localKey = _smartPlugCredStore.Load();
+ if (localKey == null) return null;
+ var config = new SmartPlugConfig(true, _settings.SmartPlugHighThreshold, _settings.SmartPlugLowThreshold, _settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, _settings.SmartPlugRelayDp, 3);
+ if (config.ValidationError() != null) return null;
+ if (_smartPlugController == null)
+ {
+ var keyBytes = TuyaCrypto.DeriveLocalKey(localKey);
+ var plug = new TuyaSmartPlug(_settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, keyBytes, _settings.SmartPlugRelayDp);
+ _smartPlugController = new SmartPlugController(plug, config);
+ }
+ return _smartPlugController;
+ }
+
+ private void ShowToastNotification(string title, string message)
         {
             _toastService.Show(title, message);
         }

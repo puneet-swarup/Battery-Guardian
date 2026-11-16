@@ -137,4 +137,47 @@
 
     </PreferenceCategory>
 
+ <PreferenceCategory app:title="Smart Plug (Tuya)">
+ <SwitchPreferenceCompat
+  app:key="sp_enabled"
+  app:title="Enable smart-plug control"
+  app:summary="Automatically switch the Tuya plug by battery level"
+  app:defaultValue="false" />
+ <EditTextPreference
+  app:key="sp_device_id"
+  app:title="Device ID"
+  app:dialogTitle="Tuya Device ID" />
+ <EditTextPreference
+  app:key="sp_host"
+  app:title="Device IP address"
+  app:dialogTitle="Device IP Address" />
+ <EditTextPreference
+  app:key="sp_local_key"
+  app:title="Local Key"
+  app:summary="Stored securely in the Android Keystore"
+  app:dialogTitle="Tuya Local Key" />
+ <EditTextPreference
+  app:key="sp_port"
+  app:title="Port"
+  app:defaultValue="6668" />
+ <EditTextPreference
+  app:key="sp_dp"
+  app:title="Relay datapoint"
+  app:defaultValue="1" />
+ <com.puneet.batteryguardian.ui.pref.SliderInputPreference
+  app:key="sp_high"
+  app:title="Switch OFF at"
+  app:defaultValue="95"
+  app:sliderMin="50"
+  app:sliderMax="100"
+  app:sliderSuffix="%" />
+ <com.puneet.batteryguardian.ui.pref.SliderInputPreference
+  app:key="sp_low"
+  app:title="Switch ON at"
+  app:defaultValue="15"
+  app:sliderMin="5"
+  app:sliderMax="50"
+  app:sliderSuffix="%" />
+ </PreferenceCategory>
+
 </PreferenceScreen>

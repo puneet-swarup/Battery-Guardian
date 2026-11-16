@@ -34,7 +34,17 @@ data class Settings(
     val respectDoNotDisturb: Boolean = true,
 
     // ---- Charge limit guidance (feature 20) ----
-    val chargeLimitNudgeShown: Boolean = false
+    val chargeLimitNudgeShown: Boolean = false,
+
+ // ---- Smart plug (Tuya) ----
+ val smartPlugEnabled: Boolean = false,
+ val smartPlugHighThreshold: Int = 95,
+ val smartPlugLowThreshold: Int = 15,
+ val smartPlugDeviceId: String = "",
+ val smartPlugHost: String = "",
+ val smartPlugPort: Int = 6668,
+ val smartPlugRelayDp: Int = 1,
+ val smartPlugProtocolVersion: String = "3.5"
 ) {
     /** True when alerts are currently suppressed by a snooze. */
     fun isSnoozed(now: Instant = Instant.now()): Boolean =

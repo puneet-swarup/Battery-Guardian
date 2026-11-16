@@ -4,6 +4,7 @@ Desktop.ini
 
 # Visual Studio / Project Files
 .vs/
+.local
 .vscode/
 *.user
 *.userosscache
@@ -78,3 +79,10 @@ Android/run_lint.bat
 Android/run_lint_clean.bat
 Android/run_tests_jdk17.bat
 Android/runnode.bat
+
+# Forge Agent per-session artifacts (never commit)
+instance.json
+lockfile
+summary.json
+summary.md
+tinytuya_core_reference.py

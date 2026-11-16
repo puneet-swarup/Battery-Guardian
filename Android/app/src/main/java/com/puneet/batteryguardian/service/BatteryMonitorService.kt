@@ -18,6 +18,8 @@ import com.puneet.batteryguardian.data.NotificationDndDetector
 import com.puneet.batteryguardian.data.SettingsQuietHoursProvider
 import com.puneet.batteryguardian.notify.NotificationChannels
 import com.puneet.batteryguardian.widget.BatteryWidgetProvider
+import com.puneet.batteryguardian.domain.smartplug.SmartPlugManager
+import kotlin.concurrent.thread
 import java.time.Instant
 
 /**
@@ -38,6 +40,7 @@ class BatteryMonitorService : Service() {
     private lateinit var log: DiagnosticLog
     private lateinit var historyStore: BatteryHistoryStore
     private lateinit var quietHoursEvaluator: QuietHoursEvaluator
+ private lateinit var smartPlugManager: SmartPlugManager
     private var lastHistoryWriteMillis: Long = 0L
 
     private var receiver: BatteryStateReceiver? = null
@@ -72,6 +75,7 @@ class BatteryMonitorService : Service() {
         )
         log = DiagnosticLog.get(this)
         NotificationChannels.ensureCreated(this)
+ smartPlugManager = SmartPlugManager(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -141,6 +145,7 @@ class BatteryMonitorService : Service() {
                 val result = coordinator.onBatterySnapshot(snapshot)
                 OngoingNotification.update(this, result.snapshot)
                 BatteryWidgetProvider.refreshAll(this)
+ evaluateSmartPlug(snapshot.percent, snapshot.percent >= 0)
             }
 
             val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -223,6 +228,7 @@ class BatteryMonitorService : Service() {
         started = false
         isRunning = false
         log.write("Monitoring stopped")
+ smartPlugManager.close()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -238,12 +244,21 @@ class BatteryMonitorService : Service() {
         } catch (_: Throwable) {
         }
         notifier.release()
+ smartPlugManager.close()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    companion object {
+    private fun evaluateSmartPlug(percent: Int, known: Boolean) {
+ val settings = settingsRepository.load()
+ val controller = smartPlugManager.controllerFor(settings) ?: return
+ thread(name = "smartplug-eval") {
+ try { controller.evaluate(percent, known) } catch (t: Throwable) { log.writeException("evaluateSmartPlug", t) }
+ }
+ }
+
+ companion object {
         const val ACTION_START = "com.puneet.batteryguardian.action.START"
         const val ACTION_STOP = "com.puneet.batteryguardian.action.STOP"
         const val ACTION_SNOOZE = "com.puneet.batteryguardian.action.SNOOZE"

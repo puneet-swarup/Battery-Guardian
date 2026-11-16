@@ -10,6 +10,7 @@ import com.puneet.batteryguardian.R
 import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.Settings
 import com.puneet.batteryguardian.data.SettingsRepository
+import com.puneet.batteryguardian.data.tuya.TuyaCredentialStore
 import com.puneet.batteryguardian.ui.pref.SliderInputPreference
 import com.puneet.batteryguardian.ui.pref.TimePickerPreference
 
@@ -64,7 +65,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         bindIdealZoneLow(current)
         bindIdealZoneHigh(current)
 
-        bindVersion()
+        bindSmartPlug(current)
+ bindVersion()
     }
 
     private fun bindHighThreshold(settings: Settings) {
@@ -188,7 +190,64 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private fun save(transform: (Settings) -> Settings) {
+    private fun bindSmartPlug(current: Settings) {
+ bindSwitch("sp_enabled", current.smartPlugEnabled) { v -> save { it.copy(smartPlugEnabled = v) } }
+ bindText("sp_device_id", current.smartPlugDeviceId) { v -> save { it.copy(smartPlugDeviceId = v) } }
+ bindText("sp_host", current.smartPlugHost) { v -> save { it.copy(smartPlugHost = v) } }
+ bindInt("sp_port", current.smartPlugPort) { v -> save { it.copy(smartPlugPort = v) } }
+ bindInt("sp_dp", current.smartPlugRelayDp) { v -> save { it.copy(smartPlugRelayDp = v) } }
+ bindSlider("sp_high", current.smartPlugHighThreshold) { v -> save { it.copy(smartPlugHighThreshold = v) } }
+ bindSlider("sp_low", current.smartPlugLowThreshold) { v -> save { it.copy(smartPlugLowThreshold = v) } }
+ val credStore = TuyaCredentialStore(requireContext())
+ findPreference<EditTextPreference>("sp_local_key")?.apply {
+ summary = if (credStore.hasKey()) "Stored securely" else "Not set"
+ setOnPreferenceChangeListener { pref, newValue ->
+ val v = (newValue as? String)?.trim().orEmpty()
+ if (v.isEmpty()) credStore.clear() else credStore.save(v)
+ (pref as EditTextPreference).summary = if (credStore.hasKey()) "Stored securely" else "Not set"
+ false
+ }
+ }
+ }
+
+ private fun bindText(key: String, current: String, onChange: (String) -> Unit) {
+ findPreference<EditTextPreference>(key)?.apply {
+ text = current
+ summary = current
+ setOnPreferenceChangeListener { pref, newValue ->
+ val v = (newValue as? String)?.trim().orEmpty()
+ (pref as EditTextPreference).summary = v
+ onChange(v)
+ true
+ }
+ }
+ }
+
+ private fun bindInt(key: String, current: Int, onChange: (Int) -> Unit) {
+ findPreference<EditTextPreference>(key)?.apply {
+ text = current.toString()
+ summary = current.toString()
+ setOnPreferenceChangeListener { pref, newValue ->
+ val v = (newValue as? String)?.trim()?.toIntOrNull() ?: return@setOnPreferenceChangeListener false
+ (pref as EditTextPreference).summary = v.toString()
+ onChange(v)
+ true
+ }
+ }
+ }
+
+ private fun bindSlider(key: String, current: Int, onChange: (Int) -> Unit) {
+ findPreference<SliderInputPreference>(key)?.apply {
+ setValue(current)
+ setOnPreferenceChangeListener { _, newValue ->
+ val v = (newValue as? Int) ?: return@setOnPreferenceChangeListener false
+ onChange(v)
+ true
+ }
+ }
+ }
+
+ private fun save(transform: (Settings) -> Settings) {
         try {
             repository.update(transform)
         } catch (t: Throwable) {
