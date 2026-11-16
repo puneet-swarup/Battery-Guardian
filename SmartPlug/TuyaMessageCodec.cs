@@ -29,10 +29,10 @@ namespace BatteryGuardian.SmartPlug
  throw new ArgumentOutOfRangeException(nameof(sequence), "Sequence must be non-negative.");
  int totalLength = 8 + payload.Length;
  byte[] buf = new byte[16 + payload.Length];
- BinaryPrimitives.WriteInt32BigEndian(buf, 0, Prefix);
- BinaryPrimitives.WriteInt32BigEndian(buf, 4, totalLength);
- BinaryPrimitives.WriteInt32BigEndian(buf, 8, sequence);
- BinaryPrimitives.WriteInt32BigEndian(buf, 12, command);
+ BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0), Prefix);
+ BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(4), totalLength);
+ BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(8), sequence);
+ BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(12), command);
  Buffer.BlockCopy(payload, 0, buf, 16, payload.Length);
  return buf;
  }

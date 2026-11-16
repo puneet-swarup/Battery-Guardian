@@ -1,5 +1,5 @@
-undefined
 using System;
+using System.Buffers.Binary;
 
 namespace BatteryGuardian.SmartPlug
 {
