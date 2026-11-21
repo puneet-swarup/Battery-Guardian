@@ -45,6 +45,7 @@ namespace BatteryGuardian
             RespectFocusAssistCheckBox.IsChecked = Settings.RespectFocusAssist;
 
             PlugEnabledCheckBox.IsChecked = Settings.SmartPlugEnabled;
+            PlugSleepCheckBox.IsChecked = Settings.SmartPlugOffWhenSleeping;
             PlugDeviceIdBox.Text = Settings.SmartPlugDeviceId;
             PlugHostBox.Text = Settings.SmartPlugHost;
             PlugPortBox.Text = Settings.SmartPlugPort.ToString();
@@ -129,6 +130,7 @@ namespace BatteryGuardian
             }
 
             Settings.SmartPlugEnabled = plugEnabled;
+            Settings.SmartPlugOffWhenSleeping = PlugSleepCheckBox.IsChecked == true;
             Settings.SmartPlugDeviceId = plug.DeviceId;
             Settings.SmartPlugHost = plug.Host;
             Settings.SmartPlugPort = plug.Port;

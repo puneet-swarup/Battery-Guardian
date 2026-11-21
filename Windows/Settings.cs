@@ -36,6 +36,15 @@ namespace BatteryGuardian
  public int SmartPlugRelayDp { get; set; } = 1;
  public string SmartPlugProtocolVersion { get; set; } = "3.5";
 
+ /// <summary>Switch the plug off when the machine sleeps or shuts down.</summary>
+ public bool SmartPlugOffWhenSleeping { get; set; } = true;
+
+ /// <summary>
+ /// Relay state recorded just before sleeping, so it can be put back on wake.
+ /// "On", "Off", or empty when nothing was recorded.
+ /// </summary>
+ public string SmartPlugStateBeforeSleep { get; set; } = string.Empty;
+
  /// <summary>
  /// Copy of every persisted field. Use this rather than copying property by
  /// property: the settings dialog used to do that by hand and quietly dropped

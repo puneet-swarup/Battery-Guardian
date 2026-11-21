@@ -139,6 +139,41 @@ namespace BatteryGuardian.SmartPlug
   throw last ?? new InvalidOperationException("Operation failed.");
  }
 
+ /// <summary>
+ /// Sends one command and returns, without retries and without waiting for an
+ /// in-flight evaluation. Used when the machine is going to sleep or shutting
+ /// down, where the OS will not wait for us: a slow, correct attempt is worth
+ /// less than a fast one.
+ /// </summary>
+ public async Task<SmartPlugStatus> ApplyNowAsync(bool on, TimeSpan timeout)
+ {
+  using var cts = new CancellationTokenSource(timeout);
+  try
+  {
+   if (on) await _plug.TurnOnAsync(cts.Token).ConfigureAwait(false);
+   else await _plug.TurnOffAsync(cts.Token).ConfigureAwait(false);
+
+   _status = _status with
+   {
+    Connected = true,
+    Relay = on ? RelayState.On : RelayState.Off,
+    LastSuccessUtc = DateTime.UtcNow,
+    LastError = SmartPlugError.None,
+    Message = on ? "Switched on." : "Switched off."
+   };
+  }
+  catch (OperationCanceledException)
+  {
+   _status = _status with { Connected = false, LastError = SmartPlugError.Timeout, Message = "No time to reach the plug." };
+  }
+  catch (Exception ex)
+  {
+   _status = _status with { Connected = false, LastError = SmartPlugError.Unreachable, Message = ex.Message };
+  }
+
+  return _status;
+ }
+
  public async Task<bool> TestConnectionAsync(CancellationToken ct = default)
  {
   await _gate.WaitAsync(ct).ConfigureAwait(false);

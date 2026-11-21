@@ -92,6 +92,13 @@ namespace BatteryGuardian
             Loaded += MainWindow_Loaded;
             Closing += MainWindow_Closing;
             Closed += MainWindow_Closed;
+
+            // Sleep, hibernate and shutdown. Lid close is one of these: Windows
+            // turns it into a suspend or a shutdown, whichever the power plan
+            // says. A lid set to "do nothing" raises nothing, and the threshold
+            // rules keep working as usual.
+            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+            SystemEvents.SessionEnding += SystemEvents_SessionEnding;
             StateChanged += MainWindow_StateChanged;
         }
 
@@ -580,12 +587,20 @@ namespace BatteryGuardian
             RefreshBatteryStatus();
             _refreshTimer.Start();
             _ = CheckForUpdatesAsync(manualCheck: false);
+
+            // If the machine was switched off rather than slept, this is where
+            // the plug gets put back: the app starts fresh and finds the state
+            // recorded before it went away.
+            _ = RestoreAfterSleepAsync();
             UpdateSnoozeMenuState();
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
             DiagnosticLog.Write("=== App CLOSED ===");
+
+            SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
+            SystemEvents.SessionEnding -= SystemEvents_SessionEnding;
 
             _refreshTimer.Stop();
             _alarmTimer.Stop();
@@ -1105,6 +1120,79 @@ namespace BatteryGuardian
    }
   }
   catch (Exception ex) { DiagnosticLog.WriteException("EvaluateSmartPlugAsync", ex); }
+ }
+
+ // ------- Sleep, shutdown and return -------
+
+ private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+ {
+  if (e.Mode == PowerModes.Suspend) HandleGoingAway();
+  else if (e.Mode == PowerModes.Resume) _ = RestoreAfterSleepAsync();
+ }
+
+ private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e) => HandleGoingAway();
+
+ /// <summary>
+ /// Records the relay state and cuts the plug. A shutdown gives the app a few
+ /// seconds at most, so this is one attempt with a short timeout rather than the
+ /// controller's retrying evaluation.
+ /// </summary>
+ /// <remarks>
+ /// The state is recorded even when the command fails: on the way back the app
+ /// still knows what the plug was meant to be, and the user is told if the
+ /// switch did not happen.
+ /// </remarks>
+ private void HandleGoingAway()
+ {
+  try
+  {
+   if (!SmartPlugSleepPolicy.ShouldSwitchOff(_settings.SmartPlugEnabled, _settings.SmartPlugOffWhenSleeping))
+    return;
+
+   SmartPlugController? controller = _smartPlugController;
+   string remembered = controller == null
+    ? string.Empty
+    : SmartPlugSleepPolicy.Remember(controller.Status.Relay);
+
+   _settings.SmartPlugStateBeforeSleep = remembered;
+   SaveSettings(_settings);
+
+   if (controller == null) return;
+
+   SmartPlugStatus status = controller.ApplyNowAsync(false, TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
+   DiagnosticLog.Write($"Going away: plug off ({status.Message}), remembered '{remembered}'.");
+  }
+  catch (Exception ex) { DiagnosticLog.WriteException("HandleGoingAway", ex); }
+ }
+
+ /// <summary>
+ /// Puts the plug back the way it was before the machine went away, then hands
+ /// control back to the threshold rules.
+ /// </summary>
+ private async Task RestoreAfterSleepAsync()
+ {
+  try
+  {
+   bool? restore = SmartPlugSleepPolicy.StateToRestore(_settings.SmartPlugStateBeforeSleep);
+   if (restore == null) return;
+
+   // Clear first: one restore per sleep, not one per resume attempt.
+   _settings.SmartPlugStateBeforeSleep = string.Empty;
+   SaveSettings(_settings);
+
+   SmartPlugController? controller = EnsureSmartPlugController();
+   if (controller == null) return;
+
+   SmartPlugStatus status = await controller.ApplyNowAsync(restore.Value, TimeSpan.FromSeconds(5));
+   DiagnosticLog.Write($"Returned: plug restored to {(restore.Value ? "on" : "off")} ({status.Message}).");
+
+   if (status.LastError != SmartPlugError.None)
+   {
+    ShowToastNotification("Battery Guardian",
+     "The smart plug did not answer, so its state may not have been restored.");
+   }
+  }
+  catch (Exception ex) { DiagnosticLog.WriteException("RestoreAfterSleepAsync", ex); }
  }
 
  private SmartPlugController? EnsureSmartPlugController()

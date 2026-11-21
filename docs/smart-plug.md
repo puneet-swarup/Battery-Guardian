@@ -81,6 +81,30 @@ Open Settings from the tray menu. Under Smart Plug set: enable control, device
 ID, device IP, Local Key (stored with DPAPI, CurrentUser scope), port (default
 6668), relay datapoint (default 1), switch OFF at (high), switch ON at (low).
 
+### Sleep, lid close and shutdown
+
+Windows turns a closed lid into a sleep or a shutdown, whichever your power plan
+says, and Battery Guardian listens for both. When the machine goes away it
+**cuts the plug** and remembers what the relay was doing. When it comes back -
+by waking, or by starting again after a shutdown - the plug is put back the way
+it was, and the threshold rules carry on from there.
+
+Why remember rather than re-decide: a laptop that sleeps at 80% is between the
+thresholds, where the rules say leave the relay alone. Without the remembered
+state, the plug would stay off until the battery fell to 15%.
+
+Two things worth knowing:
+
+- **A shutdown gives the app about five seconds.** The command is a single
+  attempt with a three-second cap, not the usual retrying evaluation. If the
+  plug does not answer in that window, the switch does not happen - the app logs
+  it, and the release note says so.
+- **A lid set to "do nothing" raises no event**, because the machine never goes
+  away. In that case the threshold rules still cut the charger at your high
+  level, as always.
+
+Turn it off with the checkbox under Settings, Smart Plug.
+
 ### Snooze and the plug
 
 Snoozing silences the alerts. It does **not** stop the plug: the app keeps

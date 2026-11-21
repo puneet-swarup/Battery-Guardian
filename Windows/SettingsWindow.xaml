@@ -117,6 +117,11 @@
                           Content="Switch the charger through a Tuya plug"
                           Margin="0,0,0,10"/>
 
+                <CheckBox x:Name="PlugSleepCheckBox"
+                          Content="Switch the plug off when the laptop sleeps or shuts down"
+                          ToolTip="The state is put back when the laptop wakes or starts again."
+                          Margin="0,0,0,10"/>
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

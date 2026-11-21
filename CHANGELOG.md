@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-11-22
+
+### Added (Windows)
+- **The plug is cut when the laptop goes away, and put back when it returns.** Sleep, hibernate and shutdown are all listened for, so a closed lid no longer leaves the charger running into a laptop that is off. The relay state is recorded before the machine goes away and restored on wake or on the next start; the threshold rules then take over. Without the remembered state the plug would stay off until the battery fell to the low level, because a sleeping laptop at 80% is between the thresholds, where the rules deliberately do nothing.
+- The command on the way out is a single attempt capped at three seconds, because a shutdown gives the app about five. If the plug does not answer, the app says so rather than pretending the charger was cut.
+- New setting under Smart Plug: *Switch the plug off when the laptop sleeps or shuts down*, on by default.
+
 ## [2.4.6] - 2026-11-21
 
 ### Added

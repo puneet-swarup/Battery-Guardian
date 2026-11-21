@@ -91,6 +91,7 @@ Both are built and tested automatically on every push and pull request by GitHub
 - **Battery history & trends**: Records periodic readings locally and shows average/range, time spent in the ideal charge zone, and an estimated annual wear from your habits.
 - **Quiet hours / Focus Assist aware**: Silence audible alerts during a configurable daily window or while Windows Focus Assist is on (the notification still appears).
 - **Charge-limit integration**: On supported laptops (Lenovo, Dell, ASUS), set a battery charge limit (e.g. 80%) straight from the tray menu.
+- **Sleep-aware plug control (optional)**: switch the plug off when the laptop sleeps, hibernates or shuts down, and put it back the way it was on wake or next start - so a sleeping laptop is never left charging at 100%.
 - **Smart plug control (optional)**: Point the app at a [Tuya](https://www.google.com/search?q=tuya+smart+plug+what+is) Wi-Fi socket, put your charger on it, and it switches the socket **off** at your high threshold and **on** at your low threshold. The alerts stop being a reminder and become an action - useful when the laptop charges overnight or while you are away. Separate thresholds from the alerts, so changing when you are told never changes when it acts. Works on both Windows and Android; see [docs/smart-plug.md](docs/smart-plug.md).
 ---
 
