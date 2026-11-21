@@ -88,13 +88,13 @@ jobs:
           EOF
 
       - name: Download Self-Contained Artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: BatteryGuardian-x64-SelfContained
           path: ./artifact-selfcontained
 
       - name: Download Framework-Dependent Artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: BatteryGuardian-x64-FrameworkDependent
           path: ./artifact-fdd
