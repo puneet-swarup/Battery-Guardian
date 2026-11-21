@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-11-16
+
+### Added
+- **Smart-plug control** on Windows and Android. The app switches a Tuya plug off at the high threshold and on at the low threshold, holding state between them so the relay does not chatter. Settings take the device id, IP, local key, port and relay data point; the key is stored with DPAPI on Windows and the Android Keystore on the phone.
+- `docs/smart-plug.md`, the reference for the feature on both platforms.
+
+### Fixed
+- Windows build errors in the smart-plug code.
+
+> The protocol in this release was a private implementation that does not match 3.4/3.5 firmware, so plug control did not work against real hardware. It is replaced in the next release; see Unreleased.
+
+## [Unreleased]
+
+### Changed (Windows)
+- **Smart plug control now uses the Tuya LAN SDK.** `TuyaSmartPlug` is an adapter over `TuyaLan.TuyaLocalDevice` (NuGet `TuyaLan` 2.0.0) instead of a private copy of the protocol. The copy was built from a description that does not match real 3.5 firmware - a frame layout without the reserved bytes, IV, tag or footer; the 3.4 session-key derivation on a 3.5 device; control on `0x07` with a bare `dps` body; and the status query on `0x08`, which is a push. It could not have switched a physical plug. Removed: `TuyaCrypto`, `TuyaMessageCodec`, `TuyaMessageCipher`, `TuyaSession`, `TuyaSession_Messaging` and their two test files.
+
+### Changed (Android)
+- **Smart plug control now uses the Tuya LAN SDK**, the same move as Windows. `TuyaSmartPlug.kt` is an adapter over `com.tuyalan.devices.TuyaLocalDevice`, vendored as `app/libs/tuya-lan-2.0.0.aar` because the SDK is not on Maven yet. Removed: `TuyaCrypto`, `TuyaMessageCodec`, `TuyaMessageCipher`, `TuyaSession`. The plug never worked from the phone for the same reason it never worked on Windows.
+- The adapter honours the protocol version already stored in Settings (3.3 / 3.4 / 3.5) instead of assuming one, and passes the device id the SDK needs.
+- `proguard-rules.pro` gains `-dontwarn` entries for the SDK's unused cloud client (OkHttp), so release builds stay clean without shipping an HTTP stack.
+
+### Added (Android)
+- `TuyaLocalKey` (Kotlin), matching the C# one: 16 characters or 32 hex digits, and a 32-character ASCII key is now rejected instead of silently producing an unusable 32-byte key.
+- `SmartPlug` and `RelayState` moved to their own file, so the interface no longer lives inside the Tuya implementation.
+
+### Added (Windows)
+- `TuyaLocalKey` parses the local key (16 characters or 32 hex digits) and rejects anything that is not a 16-byte AES key. A 32-character ASCII key used to be accepted silently and could never have worked.
+- `TuyaSmartPlugTests` covers the relay mapping and key parsing, replacing the tests that asserted the old wire format.
+- `SmartPlugController` classifies a plug timeout as `SmartPlugError.Timeout` rather than `Unreachable`.
+
+### Fixed (Windows)
+- **Battery history rewrote the whole file on every reading.** `Append` serialised the entire list - up to 5000 entries - once per entry, which is O(n^2) and made two unit tests take over four minutes. Writes are now coalesced: an append inside a 2-second window is deferred, and `Flush()` (called on window close) forces the pending write. In normal use a reading arrives every few minutes, so every append still writes immediately and nothing changes for users.
+
+### Changed (repository)
+- **Windows sources moved into `Windows/`**, mirroring `Android/`. The root now holds only the shared documents, `docs/`, `.github/` and the two platform folders, so another stack can be added without a second round of moving files. Solution, test project, installer scripts and CI paths moved with it; `dotnet` commands are now run against `Windows/BatteryGuardian.slnx`.
+- New `Windows/README.md`, matching the shape of `Android/README.md`: layout, build and test commands, output locations, versioning, and where the smart-plug protocol actually lives.
+
+### Docs
+- `docs/smart-plug.md` protocol section rewritten: it documented the incorrect wire format as if it were fact.
+
 ## [2.2.0] - 2026-11-06
 
 ### Summary

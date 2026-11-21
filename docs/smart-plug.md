@@ -31,42 +31,47 @@ Both platforms share the same logical design:
 3. The Tuya LAN client handles TCP, session-key negotiation and AES-GCM.
 4. The Tuya smart plug listens on TCP 6668 with relay datapoint 1.
 
-Key components (Windows): TuyaCrypto, TuyaMessageCodec, TuyaSession,
-TuyaMessageCipher, TuyaSmartPlug, SmartPlugController, SmartPlugDecision,
-TuyaCredentialStore.
+Key components (Windows): TuyaSmartPlug (an adapter over the SDK),
+SmartPlugController, SmartPlugDecision, TuyaCredentialStore, TuyaLocalKey.
 
-Key components (Android): the same names under
-com.puneet.batteryguardian.data.tuya and
+Key components (Android): TuyaSmartPlug (an adapter over the SDK, like the C#
+one), TuyaLocalKey, and the same controller classes under
 com.puneet.batteryguardian.domain.smartplug, plus SmartPlugManager which builds
 the controller from persisted settings and the Keystore-backed key.
 
-## Protocol (Tuya 3.5)
+## Protocol
 
-The client speaks the Tuya local protocol 3.5, documented by the TinyTuya
-project. No Python runtime or TinyTuya install is required; the protocol is
-implemented natively in C# and Kotlin.
+The Tuya protocol is **not** implemented in this repository. Both apps use the
+[Tuya LAN SDK](https://github.com/puneet-swarup/tuya-lan-sdk), which is verified
+against real hardware and carries the parts that are easy to get wrong:
 
-Wire framing (6699 codec):
+- the `0x00006699` frame, including the two reserved bytes, the 12-byte IV, the
+  16-byte GCM tag and the `0x00009966` footer
+- the three-message session-key handshake
+- the 3.5 session key (GCM of the XORed nonces, not the 3.4 ECB derivation)
+- control on `0x0D` with the body `{"protocol":5,"t":…,"data":{"dps":{…}}}`
+- the associated data being the 14 bytes after the prefix, not the length field
 
+`TuyaSmartPlug` (C#) and `TuyaSmartPlug.kt` are adapters. They keep the app's
+`ISmartPlug` / `SmartPlug` shape, hold one connection open between polls, and
+translate the SDK's exceptions into the app's error categories
+(`SmartPlugError.Protocol`, `.Timeout`, `.Unreachable`).
 
-prefix(4)=00 00 66 99 | totalLength(4) | seq(4) | command(4) | payload
+### What this replaced
 
+Until 2.3.0 both apps carried their own copy of the protocol, written from a
+description that does not match real firmware:
 
-totalLength counts seq + command + payload. All integers are big-endian.
+| the old copy did | what 3.5 firmware actually does |
+| --- | --- |
+| frame `6699 │ len │ seq │ cmd │ nonce+ct+tag` | `6699 │ reserved(2) │ seq │ cmd │ len │ iv │ ct │ tag │ 009966` |
+| AAD = the 4-byte length | AAD = the 14 bytes after the prefix |
+| session key = AES-ECB(localKey, xor) | that is the 3.4 derivation; 3.5 uses GCM |
+| control on `0x07`, body `{"dps":…}` | `0x0D`, body `{"protocol":5,"t":…,"data":{"dps":…}}` |
+| status query on `0x08` | `0x08` is a status push; the query is `0x0A` |
 
-Session-key negotiation:
-
-1. Client sends 0x03 (SESS_KEY_NEG_START) with a 16-byte client nonce.
-2. Device replies 0x04 with a 16-byte device nonce.
-3. Client sends 0x05 with HMAC-SHA256(localKey, clientNonce + deviceNonce).
-4. Device replies 0x06 with HMAC-SHA256(localKey, deviceNonce + clientNonce),
- which the client verifies in constant time.
-5. Session key = AES-128-ECB-Encrypt(localKey, clientNonce XOR deviceNonce).
-
-After negotiation, message payloads are AES-128-GCM encrypted with the session
-key. A random 12-byte nonce is prepended and the 16-byte authentication tag is
-appended; the associated data is the 4-byte big-endian packet length. Commands:
-0x07 control (DP write), 0x08 status query.
+It could not have switched a physical plug, and its unit tests passed because
+they asserted the same wrong assumptions.
 
 ## Configuration
 
@@ -131,7 +136,7 @@ Pure, deterministic logic is unit tested without a device:
 - Decision: high/low threshold actions, intermediate retention, unknown
  battery, already-correct state, unknown relay query, config validation.
 
-Run Windows tests with dotnet test BatteryGuardian.Tests. Run Android tests with
+Run Windows tests with dotnet test Windows/BatteryGuardian.Tests. Run Android tests with
 gradlew.bat :app:testDebugUnitTest.
 
 ## Troubleshooting

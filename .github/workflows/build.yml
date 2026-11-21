@@ -5,8 +5,16 @@ on:
     branches: [ "main" ]
     tags:
       - 'v*'
+    # Path filters are not evaluated for tag pushes, so a release always builds.
+    # Without them a docs-only change would occupy a windows-latest runner.
+    paths:
+      - 'Windows/**'
+      - '.github/workflows/build.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'Windows/**'
+      - '.github/workflows/build.yml'
 
 jobs:
   build:
@@ -22,24 +30,24 @@ jobs:
         dotnet-version: '10.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Windows/BatteryGuardian.slnx
 
     - name: Build
-      run: dotnet build -c Release --no-restore
+      run: dotnet build Windows/BatteryGuardian.slnx -c Release --no-restore
 
     - name: Run Tests
-      run: dotnet test -c Release --no-build --verbosity normal
+      run: dotnet test Windows/BatteryGuardian.slnx -c Release --no-build --verbosity normal
 
     - name: Publish (Self-Contained x64)
-      run: dotnet publish BatteryGuardian.csproj -c Release -r win-x64 --self-contained true -o PublishOutput
+      run: dotnet publish Windows/BatteryGuardian.csproj -c Release -r win-x64 --self-contained true -o PublishOutput
 
     - name: Publish (Framework-Dependent x64)
-      run: dotnet publish BatteryGuardian.csproj -c Release -o PublishOutput-FDD
+      run: dotnet publish Windows/BatteryGuardian.csproj -c Release -o PublishOutput-FDD
 
     - name: Copy installer scripts into both outputs
       run: |
-        Copy-Item install.bat,install.ps1,uninstall.bat,uninstall.ps1 PublishOutput\ -Force
-        Copy-Item install.bat,install.ps1,uninstall.bat,uninstall.ps1 PublishOutput-FDD\ -Force
+        Copy-Item Windows\install.bat,Windows\install.ps1,Windows\uninstall.bat,Windows\uninstall.ps1 PublishOutput\ -Force
+        Copy-Item Windows\install.bat,Windows\install.ps1,Windows\uninstall.bat,Windows\uninstall.ps1 PublishOutput-FDD\ -Force
 
     - name: Upload Self-Contained Artifact
       uses: actions/upload-artifact@v5
@@ -61,6 +69,24 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # GitHub's generated notes only list merged pull requests. This project
+      # pushes straight to main, so they came out as a bare compare link while
+      # CHANGELOG.md held the real content. Take the section for this tag.
+      - name: Release notes from the changelog
+        run: |
+          python3 - <<'EOF'
+          import os, re
+          tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(rf"(?ms)^## \[{re.escape(tag)}\].*?(?=^## \[|\Z)", text)
+          body = m.group(0).strip() if m else f"Release {tag}"
+          open("notes.md", "w", encoding="utf-8").write(body + "\n")
+          print(body[:400])
+          EOF
+
       - name: Download Self-Contained Artifact
         uses: actions/download-artifact@v5
         with:
@@ -85,9 +111,10 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Battery Guardian ${{ github.ref_name }}
+          body_path: notes.md
           files: |
             BatteryGuardian-x64-SelfContained.zip
             BatteryGuardian-x64-FrameworkDependent.zip
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false

@@ -26,8 +26,19 @@ This repository ships **two** native apps that share the same alert logic and de
 
 | Platform | Stack | Min version | Docs |
 |---|---|---|---|
-| 🪟 **Windows** | WPF, .NET 10 | Windows 10 (1809)+ | [Windows section](#-windows-app) |
+| 🪟 **Windows** | WPF, .NET 10 | Windows 10 (1809)+ | [Windows/README.md](Windows/README.md) |
 | 🤖 **Android** | Kotlin, Material Components | Android 9 (Pie) | [Android/README.md](Android/README.md) |
+
+The repository is split by platform so another stack can be added without
+disturbing the others:
+
+```
+Battery-Guardian/
+├── Windows/          WPF app, tests, installer scripts
+├── Android/          Kotlin app, tests, Gradle build
+├── docs/             ADRs, screenshots, the smart-plug reference
+└── .github/          CI for both platforms
+```
 
 Both are built and tested automatically on every push and pull request by GitHub Actions:
 
@@ -208,7 +219,7 @@ Both apps ship with unit tests that run without a device.
 **Windows (.NET):**
 
 ```cmd
-dotnet test
+dotnet test Windows/BatteryGuardian.slnx
 ```
 
 Or from Visual Studio: Test → Run All Tests (Ctrl + R, A).
@@ -216,6 +227,9 @@ Or from Visual Studio: Test → Run All Tests (Ctrl + R, A).
 **Android (Kotlin):** run `cd Android` then `build.bat test` (249 JVM unit tests) or `build.bat coverage` (tests + JaCoCo coverage report). No device or emulator needed.
 
 All tests must pass before submitting a pull request.
+
+Releases are cut from a tag and both platforms build from it in one go; see
+[RELEASING.md](RELEASING.md).
 
 ---
 

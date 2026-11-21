@@ -48,3 +48,29 @@ jobs:
         with:
           name: release-aab
           path: Android/app/build/outputs/bundle/release/*.aab
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: ./aab
+
+      - name: Name the bundle after the tag
+        run: |
+          mkdir -p out
+          cp aab/*.aab "out/BatteryGuardian-android-${GITHUB_REF_NAME}.aab"
+
+      # No body and no generated notes: the Windows workflow owns the release
+      # text, and updating with only `files` leaves it alone.
+      - name: Attach the AAB to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: out/*.aab
+          generate_release_notes: false

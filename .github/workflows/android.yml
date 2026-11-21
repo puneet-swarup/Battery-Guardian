@@ -5,8 +5,15 @@ on:
     branches: [ "main" ]
     tags:
       - 'v*'
+    # Path filters are not evaluated for tag pushes, so a release always builds.
+    paths:
+      - 'Android/**'
+      - '.github/workflows/android.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'Android/**'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
 
 jobs:
@@ -30,10 +37,9 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
-      with:
-        # No wrapper is committed, so install the exact Gradle version
-        # that matches the local toolchain and AGP 9.2.0.
-        gradle-version: '9.4.1'
+      # The wrapper is committed (Android/gradlew, Gradle 9.4.1), so CI and a
+      # local build use the same version by construction. This action only adds
+      # dependency caching on top of it.
 
     - name: Install Android SDK components
       run: |
@@ -41,7 +47,7 @@ jobs:
         "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
 
     - name: Run unit tests with coverage
-      run: gradle testDebugUnitTest createDebugUnitTestCoverageReport --no-daemon
+      run: ./gradlew testDebugUnitTest createDebugUnitTestCoverageReport --no-daemon
 
     - name: Upload test report
       if: always()
@@ -58,7 +64,7 @@ jobs:
         path: Android/app/build/reports/coverage/test/debug
 
     - name: Build debug APK
-      run: gradle assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon
 
     - name: Upload debug APK
       uses: actions/upload-artifact@v5
@@ -80,7 +86,7 @@ jobs:
         BG_STORE_PASSWORD: ${{ secrets.BG_STORE_PASSWORD }}
         BG_KEY_ALIAS: ${{ secrets.BG_KEY_ALIAS }}
         BG_KEY_PASSWORD: ${{ secrets.BG_KEY_PASSWORD }}
-      run: gradle assembleRelease --no-daemon
+      run: ./gradlew assembleRelease --no-daemon
 
     - name: Upload release APK
       if: startsWith(github.ref, 'refs/tags/')
