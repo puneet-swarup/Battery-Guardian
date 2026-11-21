@@ -3,8 +3,9 @@ package com.puneet.batteryguardian.domain.smartplug
 import android.content.Context
 import com.puneet.batteryguardian.data.Settings
 import com.puneet.batteryguardian.data.tuya.TuyaCredentialStore
-import com.puneet.batteryguardian.data.tuya.TuyaCrypto
+import com.puneet.batteryguardian.data.tuya.TuyaLocalKey
 import com.puneet.batteryguardian.data.tuya.TuyaSmartPlug
+import com.tuyalan.protocol.TuyaProtocolVersion
 
 // Builds and owns a SmartPlugController from persisted settings + the
 // Keystore-backed local key. Returns null when the feature is disabled or
@@ -30,11 +31,25 @@ class SmartPlugManager(private val context: Context) {
  protocolVersion = settings.smartPlugProtocolVersion
  )
  if (config.validationError() != null) return null
- val localKey = TuyaCrypto.deriveLocalKey(key)
- val plug = TuyaSmartPlug(settings.smartPlugHost, settings.smartPlugPort, localKey, settings.smartPlugRelayDp)
+ val localKey = TuyaLocalKey.parse(key)
+ val plug = TuyaSmartPlug(
+ deviceId = settings.smartPlugDeviceId,
+ host = settings.smartPlugHost,
+ port = settings.smartPlugPort,
+ localKey = localKey,
+ relayDp = settings.smartPlugRelayDp,
+ version = protocolVersion(settings.smartPlugProtocolVersion),
+ )
  controller = SmartPlugController(plug, config)
  signature = sig
  return controller
+ }
+
+ /** The settings store keeps the version as text; the SDK wants the enum. */
+ private fun protocolVersion(value: String): TuyaProtocolVersion = when (value.trim()) {
+ "3.3" -> TuyaProtocolVersion.V33
+ "3.4" -> TuyaProtocolVersion.V34
+ else -> TuyaProtocolVersion.V35
  }
 
  private fun buildSignature(s: Settings, key: String): String =

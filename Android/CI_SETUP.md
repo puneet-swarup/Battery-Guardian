@@ -59,6 +59,7 @@ MinVer with the same v prefix.
 
 ## Without the secrets
 
-If the keystore secrets are absent, the release build still runs but produces an
-unsigned APK. The workflow only decodes the keystore and signs on tag builds, so
-normal branch and PR builds are unaffected.
+If the keystore secrets are absent, a tag build fails at the signing step: the
+decode produces an empty keystore file and Gradle rejects it. Branch and
+pull-request builds are unaffected, because the keystore is only decoded on tag
+builds. Add the four secrets before the first release.

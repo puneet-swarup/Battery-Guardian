@@ -1,92 +1,106 @@
 package com.puneet.batteryguardian.data.tuya
 
-import org.json.JSONObject
+import com.tuyalan.devices.TuyaDeviceOptions
+import com.tuyalan.devices.TuyaLocalDevice
+import com.tuyalan.protocol.TuyaProtocolVersion
+import kotlinx.coroutines.runBlocking
 
-enum class RelayState { UNKNOWN, ON, OFF }
-
-interface SmartPlug {
- fun getStatus(): RelayState
- fun turnOn()
- fun turnOff()
- fun testConnection(): Boolean
- fun close()
-}
-
+/**
+ * Talks to a Tuya smart plug over the local network.
+ *
+ * The protocol itself is `com.tuyalan.devices.TuyaLocalDevice` from the
+ * [Tuya LAN SDK](https://github.com/puneet-swarup/tuya-lan-sdk). This class is
+ * only the adapter: it keeps the app's blocking [SmartPlug] shape, holds one
+ * connection open between polls, and lets the SDK's exceptions reach
+ * [com.puneet.batteryguardian.domain.smartplug.SmartPlugController], which
+ * records them for the settings screen.
+ *
+ * It used to carry its own copy of the protocol. That copy was built from a
+ * description that does not match real 3.5 firmware - wrong frame layout, the
+ * 3.4 session-key derivation, control on 0x07 with a bare dps body - so it could
+ * never have switched a physical plug.
+ */
 class TuyaSmartPlug(
- private val host: String,
- private val port: Int,
- private val localKey: ByteArray,
- private val relayDp: Int,
- private val timeoutMs: Int = 5000
+    deviceId: String,
+    host: String,
+    port: Int,
+    localKey: ByteArray,
+    relayDp: Int,
+    version: TuyaProtocolVersion = TuyaProtocolVersion.V35,
+    private val timeoutMs: Int = 5000,
 ) : SmartPlug {
- private var session: TuyaSession? = null
 
- @Synchronized
- private fun ensureConnected() {
- val s = session
- if (s != null && s.isConnected) return
- s?.close()
- val ns = TuyaSession(host, port, localKey, timeoutMs)
- ns.connect()
- session = ns
- }
+    private val relayDpId = relayDp.toString()
 
- @Synchronized
- override fun getStatus(): RelayState {
- ensureConnected()
- val resp = session!!.sendAndReceive(TuyaSession.CMD_STATUS, ByteArray(0))
- return parseRelay(resp)
- }
+    private val options = TuyaDeviceOptions(
+        host = host,
+        deviceId = deviceId,
+        // The SDK takes either form; bytes win when both are supplied.
+        localKey = "",
+        localKeyBytes = localKey,
+        version = version,
+        port = port,
+        connectTimeoutMillis = timeoutMs,
+        commandTimeoutMillis = timeoutMs.toLong(),
+        // The plug is polled on a timer; its heartbeat is redundant here.
+        enableHeartbeat = false,
+    )
 
- @Synchronized
- override fun turnOn() = setRelay(true)
+    private var device: TuyaLocalDevice? = null
 
- @Synchronized
- override fun turnOff() = setRelay(false)
+    private suspend fun connected(): TuyaLocalDevice {
+        val current = device
+        if (current != null && current.isConnected) return current
 
- private fun setRelay(on: Boolean) {
- ensureConnected()
- val json = buildControlJson(relayDp, on)
- session!!.sendAndReceive(TuyaSession.CMD_CONTROL, json.toByteArray(Charsets.UTF_8))
- }
+        closeDevice()
 
- override fun testConnection(): Boolean {
- return try {
- getStatus()
- true
- } catch (t: Throwable) {
- false
- }
- }
+        val fresh = TuyaLocalDevice(options)
+        fresh.connect()
+        device = fresh
+        return fresh
+    }
 
- private fun parseRelay(resp: ByteArray): RelayState {
- if (resp.isEmpty()) return RelayState.UNKNOWN
- return try {
- val obj = JSONObject(String(resp, Charsets.UTF_8))
- val dps = obj.optJSONObject("dps") ?: return RelayState.UNKNOWN
- if (!dps.has(relayDp.toString())) return RelayState.UNKNOWN
- when (val v = dps.get(relayDp.toString())) {
- is Boolean -> if (v) RelayState.ON else RelayState.OFF
- is String -> if (v.equals("true", ignoreCase = true)) RelayState.ON else RelayState.OFF
- else -> RelayState.UNKNOWN
- }
- } catch (t: Throwable) {
- RelayState.UNKNOWN
- }
- }
+    @Synchronized
+    override fun getStatus(): RelayState = runBlocking {
+        mapRelay(connected().getStatus().getBool(relayDpId))
+    }
 
- @Synchronized
- override fun close() {
- session?.close()
- session = null
- }
+    @Synchronized
+    override fun turnOn() = setRelay(true)
 
- companion object {
- fun buildControlJson(dp: Int, on: Boolean): String {
- val q = (34).toChar()
- val s = q.toString()
- val value = if (on) "true" else "false"
- return s + "dps" + s + ":" + s + "{" + s + dp + s + ":" + value + s + "}" + s
- }
- }
+    @Synchronized
+    override fun turnOff() = setRelay(false)
+
+    private fun setRelay(on: Boolean) {
+        runBlocking { connected().setDp(relayDpId, on) }
+    }
+
+    override fun testConnection(): Boolean = try {
+        getStatus()
+        true
+    } catch (t: Throwable) {
+        false
+    }
+
+    @Synchronized
+    override fun close() = closeDevice()
+
+    private fun closeDevice() {
+        val current = device ?: return
+        device = null
+        try {
+            current.close()
+        } catch (_: Throwable) {
+            // A dead socket is not worth reporting on a teardown path.
+        }
+    }
+
+    companion object {
+        /** Maps the SDK's nullable boolean onto the controller's tri-state. */
+        fun mapRelay(value: Boolean?): RelayState = when (value) {
+            true -> RelayState.ON
+            false -> RelayState.OFF
+            null -> RelayState.UNKNOWN
+        }
+    }
 }

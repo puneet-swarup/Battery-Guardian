@@ -14,7 +14,7 @@ should unplug at high charge or plug in at low charge.
 
 | Tool | Version |
 |---|---|
-| JDK | 17 or newer |
+| JDK | **17** for the test suite (see below); the app builds on newer |
 | Gradle | 9.4.1 (installed locally) |
 | Android Gradle Plugin | 9.2.0 |
 | Android SDK Platform | android-36 |
@@ -22,6 +22,36 @@ should unplug at high charge or plug in at low charge.
 
 The local.properties file points Gradle at the Android SDK via the sdk.dir
 property (for example, the SDK folder under your AppData Local Android Sdk path).
+
+### Test JVM and Robolectric
+
+Robolectric 4.14.1 bundles an ASM that cannot read class files from JDKs newer
+than 21. Run the suite on a newer JDK and about a third of it fails with
+`IllegalArgumentException at ClassReader.java` - in settings, notification and
+activity tests alike, none of which touch the code being blamed. CI pins JDK 17,
+which is why CI stays green.
+
+`app/build.gradle.kts` pins `org.ow2.asm:asm:9.9.1` on the test classpath, which
+fixes it without changing the JDK you build with. If you still see the error, pin
+the test JVM instead:
+
+```cmd
+winget install EclipseAdoptium.Temurin.17.JDK
+gradlew.bat -version                       :: note the "Daemon JVM" line
+```
+
+Then either set it for one session:
+
+```cmd
+set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot
+gradlew.bat --stop
+gradlew.bat :app:testDebugUnitTest
+```
+
+or permanently, by uncommenting `org.gradle.java.home` in `gradle.properties`
+(use forward slashes).
+
+`gradlew.bat --stop` matters: a running daemon keeps the JVM it started with.
 
 ## Build and test
 
@@ -163,6 +193,21 @@ Instrumented (on-device) tests live in app/src/androidTest and run with:
 The pure core/ and data/ layers have no Android dependencies and are the direct
 Kotlin ports of the Windows app's BatteryAlertEvaluator.cs and
 BatteryHealthInfo.cs, which is what makes them unit-testable.
+
+### Smart plug dependency
+
+The Tuya protocol is not implemented here. `data/tuya/TuyaSmartPlug.kt` is an
+adapter over the [Tuya LAN SDK](https://github.com/puneet-swarup/tuya-lan-sdk),
+vendored as `app/libs/tuya-lan-2.0.0.aar` because the SDK is not on Maven yet.
+It is a blocking adapter over the SDK's suspend API: the only caller is
+`BatteryMonitorService`, which runs it on a dedicated `smartplug-eval` thread.
+
+To update the SDK, drop a new AAR in `app/libs/` and change the version in
+`app/build.gradle.kts`. Swapping `implementation(files(...))` for a Maven
+coordinate is the only change needed once the SDK is published.
+
+`proguard-rules.pro` carries `-dontwarn` entries for OkHttp and
+`com.tuyalan.cloud`: the AAR bundles a cloud client this app never loads.
 
 ## Android version compatibility
 

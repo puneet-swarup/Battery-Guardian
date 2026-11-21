@@ -138,6 +138,13 @@ dependencies {
     // Coroutines for background work (update checks etc.)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
+    // Tuya LAN protocol, from the SDK's published release. The SDK is not on
+    // Maven yet, so the AAR is vendored; replacing this line with a coordinate
+    // is the only change needed once it is. Update with:
+    //   curl -L -o app/libs/tuya-lan-<version>.aar \
+    //     https://github.com/puneet-swarup/tuya-lan-sdk/releases/download/v<version>/tuya-lan-v<version>.aar
+    implementation(files("libs/tuya-lan-2.0.0.aar"))
+
     // Unit testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
@@ -145,6 +152,14 @@ dependencies {
     // Robolectric lets JVM unit tests exercise Android framework classes
     // (SharedPreferences, Context, notifications) without a device.
     testImplementation("org.robolectric:robolectric:4.14.1")
+
+    // Robolectric 4.14.1 bundles an ASM that cannot read class files produced by
+    // JDKs newer than 21, and fails every instrumented test with
+    // "Unsupported class file major version" - in tests that have nothing to do
+    // with the code being blamed. A newer ASM on the test classpath fixes it
+    // without changing the JDK the build runs on. Gradle keeps the highest
+    // version, so this wins over Robolectric's own copy.
+    testImplementation("org.ow2.asm:asm:9.9.1")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.2.1")
     // FragmentScenario for Robolectric fragment tests.
