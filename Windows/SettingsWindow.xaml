@@ -109,6 +109,73 @@
                       VerticalAlignment="Center" Content="Also silence while Windows Focus Assist is on"
                       Margin="0,0,0,20"/>
 
+            <!-- ==== Smart plug ==== -->
+            <StackPanel Grid.Row="13" Grid.ColumnSpan="2" Margin="0,0,0,20">
+                <TextBlock Text="Smart Plug" FontWeight="Bold" Foreground="#555" Margin="0,0,0,8"/>
+
+                <CheckBox x:Name="PlugEnabledCheckBox"
+                          Content="Switch the charger through a Tuya plug"
+                          Margin="0,0,0,10"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Device ID:"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <TextBox x:Name="PlugDeviceIdBox" Grid.Row="0" Grid.Column="1"
+                             Margin="0,0,0,10" Padding="4"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="IP address:"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <TextBox x:Name="PlugHostBox" Grid.Row="1" Grid.Column="1"
+                             Margin="0,0,0,10" Padding="4"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Port:"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <TextBox x:Name="PlugPortBox" Grid.Row="2" Grid.Column="1" Width="70"
+                             HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Relay data point:"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <TextBox x:Name="PlugRelayDpBox" Grid.Row="3" Grid.Column="1" Width="50"
+                             HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Switch OFF at (%):"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <TextBox x:Name="PlugHighBox" Grid.Row="4" Grid.Column="1" Width="50"
+                             HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Switch ON at (%):"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <TextBox x:Name="PlugLowBox" Grid.Row="5" Grid.Column="1" Width="50"
+                             HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
+
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Local key:"
+                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
+                    <PasswordBox x:Name="PlugKeyBox" Grid.Row="6" Grid.Column="1"
+                                 Margin="0,0,0,10" Padding="4"/>
+                </Grid>
+
+                <Button x:Name="TestPlugButton" Content="Test connection"
+                        Width="130" Height="28" HorizontalAlignment="Left"
+                        Margin="0,0,0,6" Click="TestPlugButton_Click"/>
+
+                <TextBlock x:Name="PlugStatusText" Foreground="#666666" TextWrapping="Wrap"
+                           Text="The key is stored encrypted for your Windows account only."/>
+            </StackPanel>
+
             <Button Grid.Row="14" Grid.Column="0" Grid.ColumnSpan="2"
                     Content="Save Settings"
                     Width="120" Height="32"

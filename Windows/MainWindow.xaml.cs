@@ -695,6 +695,11 @@ namespace BatteryGuardian
             {
                 _settings = settingsWindow.Settings;
                 SaveSettings(_settings);
+
+                // The controller caches its configuration; without this a change
+                // to the plug settings only took effect after a restart.
+                _smartPlugController?.Dispose();
+                _smartPlugController = null;
                 _highAlertActive = false;
                 _lowAlertActive = false;
                 _currentAlertMessage = "";
