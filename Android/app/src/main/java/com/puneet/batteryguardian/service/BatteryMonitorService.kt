@@ -41,6 +41,8 @@ class BatteryMonitorService : Service() {
     private lateinit var historyStore: BatteryHistoryStore
     private lateinit var quietHoursEvaluator: QuietHoursEvaluator
  private lateinit var smartPlugManager: SmartPlugManager
+
+ private val plugEvaluationInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
     private var lastHistoryWriteMillis: Long = 0L
 
     private var receiver: BatteryStateReceiver? = null
@@ -253,8 +255,16 @@ class BatteryMonitorService : Service() {
     private fun evaluateSmartPlug(percent: Int, known: Boolean) {
  val settings = settingsRepository.load()
  val controller = smartPlugManager.controllerFor(settings) ?: return
+
+ // One evaluation at a time, and drop the rest. Spawning a thread per reading
+ // let them pile up behind a plug that was slow or unreachable, so the app
+ // acted on readings that were minutes old.
+ if (!plugEvaluationInFlight.compareAndSet(false, true)) return
+
  thread(name = "smartplug-eval") {
- try { controller.evaluate(percent, known) } catch (t: Throwable) { log.writeException("evaluateSmartPlug", t) }
+ try { controller.evaluate(percent, known) }
+ catch (t: Throwable) { log.writeException("evaluateSmartPlug", t) }
+ finally { plugEvaluationInFlight.set(false) }
  }
  }
 

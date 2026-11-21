@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A change to the smart-plug settings now takes effect immediately; the cached controller was reused with the old configuration until the app restarted.
 
 ### Fixed (smart plug)
+- **The plug only switched when the settings were saved.** One evaluation could hold the controller for up to two minutes of retries, every 30-second reading added another waiter, and the queue never drained - so the app appeared to ignore the battery entirely until a save rebuilt the controller. Evaluations are now skipped when one is already running, and a single evaluation is capped at 20 seconds so it always finishes inside a refresh. Android had the same shape: a thread per reading, queued on one lock.
 - The two plug levels now have to be at least 5 points apart. Nothing stopped a 96 / 95 setting, which made the relay click on and off once per percent, wearing the contacts and cycling the charger. Enforced in the controller configuration on both platforms and in the settings screen before you save.
 
 ## [2.4.0] - 2026-11-21
