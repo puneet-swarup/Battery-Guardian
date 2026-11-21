@@ -583,6 +583,7 @@ namespace BatteryGuardian
 
             _refreshTimer.Stop();
             _alarmTimer.Stop();
+            _historyStore.Flush();
             _notifyIcon?.Dispose();
             _speechSynthesizer.Dispose();
             // Do NOT dispose _warningIcon — it's a shared system icon.
@@ -1073,7 +1074,7 @@ namespace BatteryGuardian
  if (config.ValidationError() != null) return null;
  if (_smartPlugController == null)
  {
- var keyBytes = TuyaCrypto.DeriveLocalKey(localKey);
+ var keyBytes = TuyaLocalKey.Parse(localKey);
  var plug = new TuyaSmartPlug(_settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, keyBytes, _settings.SmartPlugRelayDp);
  _smartPlugController = new SmartPlugController(plug, config);
  }

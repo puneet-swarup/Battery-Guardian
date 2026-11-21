@@ -67,6 +67,7 @@ namespace BatteryGuardian.Tests
             var first = new JsonFileBatteryHistoryStore(_path);
             first.Append(Entry(11));
             first.Append(Entry(22));
+            first.Flush(); // writes are coalesced; Flush guarantees persistence
 
             var second = new JsonFileBatteryHistoryStore(_path);
             var all = second.GetAll();

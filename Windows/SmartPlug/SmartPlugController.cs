@@ -65,6 +65,11 @@ namespace BatteryGuardian.SmartPlug
  _status = new SmartPlugStatus(true, true, relay, DateTime.UtcNow, SmartPlugError.None, decision.Reason);
  return _status;
  }
+ catch (TimeoutException ex)
+ {
+  _status = _status with { Connected = false, LastError = SmartPlugError.Timeout, Message = ex.Message };
+  return _status;
+ }
  catch (TuyaProtocolException ex)
  {
  _status = _status with { Connected = false, LastError = SmartPlugError.Protocol, Message = ex.Message };

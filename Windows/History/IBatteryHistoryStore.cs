@@ -17,5 +17,11 @@ namespace BatteryGuardian.History
 
         /// <summary>Remove all stored readings.</summary>
         void Clear();
+
+        /// <summary>
+        /// Persist anything buffered in memory. Writes may be coalesced, so call
+        /// this before shutting down; it is a no-op when nothing is pending.
+        /// </summary>
+        void Flush();
     }
 }
