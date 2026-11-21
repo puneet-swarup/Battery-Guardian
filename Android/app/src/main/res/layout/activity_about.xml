@@ -61,6 +61,14 @@
                 android:textSize="15sp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/tuyaButton"
+                style="@style/Widget.BatteryGuardian.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/about_tuya_link" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/githubButton"
                 style="@style/Widget.BatteryGuardian.Button.Outlined"
                 android:layout_width="match_parent"

@@ -37,14 +37,31 @@
                    Foreground="#555555"
                    Margin="0,0,0,20"/>
 
-        <TextBlock Grid.Row="2"
-                   Text="A lightweight Windows utility that protects laptop battery health by alerting you when to plug in or unplug your charger."
-                   TextWrapping="Wrap"
-                   FontSize="13"
-                   HorizontalAlignment="Center"
-                   TextAlignment="Center"
-                   Foreground="#333333"
-                   Margin="0,0,0,20"/>
+        <StackPanel Grid.Row="2" Margin="0,0,0,18">
+            <TextBlock Text="A lightweight utility that protects battery health by telling you when to plug in or unplug - and, with a Tuya smart plug, by switching the charger itself."
+                       TextWrapping="Wrap"
+                       FontSize="13"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Foreground="#333333"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock FontSize="12" Foreground="#444444" TextWrapping="Wrap" Margin="0,0,0,10">
+                <Run Text="&#x2022;  High and low charge alerts, spoken and shown as a toast"/><LineBreak/>
+                <Run Text="&#x2022;  Repeat reminders until you act, plus snooze"/><LineBreak/>
+                <Run Text="&#x2022;  Quiet hours and Focus Assist awareness"/><LineBreak/>
+                <Run Text="&#x2022;  Battery health, charge history and wear trends"/><LineBreak/>
+                <Run Text="&#x2022;  Charge limit on supported Lenovo, Dell and ASUS laptops"/><LineBreak/>
+                <Run Text="&#x2022;  Optional: switch a Tuya smart plug at your thresholds, so the charger is cut even when you are away"/><LineBreak/>
+            </TextBlock>
+
+            <TextBlock HorizontalAlignment="Center" FontSize="12">
+                <Hyperlink Click="TuyaLink_Click"
+                           ToolTip="Opens a Google search in your browser">
+                    What is a Tuya smart plug?
+                </Hyperlink>
+            </TextBlock>
+        </StackPanel>
 
         <TextBlock x:Name="AuthorText"
                    Grid.Row="3"

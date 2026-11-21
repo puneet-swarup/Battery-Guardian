@@ -29,12 +29,9 @@ class AboutActivity : AppCompatActivity() {
             BuildConfig.VERSION_CODE
         )
 
-        binding.githubButton.setOnClickListener {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_URL)))
-            } catch (_: Throwable) {
-            }
-        }
+        binding.tuyaButton.setOnClickListener { open(TUYA_SEARCH_URL) }
+
+        binding.githubButton.setOnClickListener { open(GITHUB_URL) }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -42,7 +39,18 @@ class AboutActivity : AppCompatActivity() {
         return true
     }
 
+    private fun open(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (_: Throwable) {
+        }
+    }
+
     companion object {
         private const val GITHUB_URL = "https://github.com/puneet-swarup/Battery-Guardian"
+
+        // A plain search link on purpose: it explains the hardware in the
+        // reader's own words and language, and cannot go stale.
+        private const val TUYA_SEARCH_URL = "https://www.google.com/search?q=tuya+smart+plug+what+is"
     }
 }

@@ -18,6 +18,8 @@ A lightweight, open-source battery-health assistant that helps extend your batte
 
 Lithium-ion batteries degrade fastest when kept at 100% charge for extended periods, or when drained below 15%. Battery Guardian runs quietly in the background and alerts you via voice, beep, and notifications so you never forget to manage your battery health.
 
+If you would rather not be reminded at all, an optional **[Tuya](https://www.google.com/search?q=tuya+smart+plug+what+is) smart plug** lets the app switch the charger itself - off at your top level, back on at your low level.
+
 ---
 
 ## 📱 Platforms
@@ -89,7 +91,21 @@ Both are built and tested automatically on every push and pull request by GitHub
 - **Battery history & trends**: Records periodic readings locally and shows average/range, time spent in the ideal charge zone, and an estimated annual wear from your habits.
 - **Quiet hours / Focus Assist aware**: Silence audible alerts during a configurable daily window or while Windows Focus Assist is on (the notification still appears).
 - **Charge-limit integration**: On supported laptops (Lenovo, Dell, ASUS), set a battery charge limit (e.g. 80%) straight from the tray menu.
+- **Smart plug control (optional)**: Point the app at a [Tuya](https://www.google.com/search?q=tuya+smart+plug+what+is) Wi-Fi socket, put your charger on it, and it switches the socket **off** at your high threshold and **on** at your low threshold. The alerts stop being a reminder and become an action - useful when the laptop charges overnight or while you are away. Separate thresholds from the alerts, so changing when you are told never changes when it acts. Works on both Windows and Android; see [docs/smart-plug.md](docs/smart-plug.md).
 ---
+
+### 🔌 Smart plug, in one paragraph
+
+A Tuya smart plug is a cheap Wi-Fi socket controlled by the Smart Life or Tuya
+Smart app. Battery Guardian talks to it directly on your local network, so no
+account or cloud service is involved. Enter the plug's device ID, IP address and
+local key once in Settings, press **Test connection**, and from then on the app
+cuts the charger at your high threshold and restores it at your low threshold.
+
+Setup steps, the fields, and what to check when it does not connect are in
+[docs/smart-plug.md](docs/smart-plug.md). Never heard of Tuya?
+[This search](https://www.google.com/search?q=tuya+smart+plug+what+is) explains
+the hardware in a sentence.
 
 ## 🛠️ Prerequisites
 

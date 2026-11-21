@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.3] - 2026-11-21
+
+### Changed
+- **The smart plug is now visible where users actually look.** It shipped in 2.4.1 and appeared in neither About screen nor the top-level README, so the only way to discover that the app can switch a charger was to read the changelog. Both About screens now list what the app does and offer a plain search link explaining what a Tuya smart plug is, and the README has a short section pointing at the setup guide.
+
 ## [2.4.2] - 2026-11-21
 
 ### Fixed (Windows)

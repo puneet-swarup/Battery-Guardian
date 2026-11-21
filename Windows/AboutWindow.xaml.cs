@@ -43,11 +43,19 @@ namespace BatteryGuardian
             }
         }
 
+        // A plain search link on purpose: it explains the hardware in the
+        // reader's own words and language, and it cannot go stale the way a
+        // vendor page can.
+        private const string TuyaSearchUrl = "https://www.google.com/search?q=tuya+smart+plug+what+is";
+
         private void GitHubButton_Click(object sender, RoutedEventArgs e)
             => OpenUrl(GitHubUrl);
 
         private void ReleasesButton_Click(object sender, RoutedEventArgs e)
             => OpenUrl(ReleasesUrl);
+
+        private void TuyaLink_Click(object sender, RoutedEventArgs e)
+            => OpenUrl(TuyaSearchUrl);
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
             => Close();
