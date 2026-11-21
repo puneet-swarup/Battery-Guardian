@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-11-21
+
+### Fixed (Windows)
+- **The smart plug had no settings screen.** The configuration could only be edited by hand in the JSON file, and the settings dialog rebuilt the object field by field without copying the eight plug fields, so opening and saving Settings silently reset them. The window now has a Smart Plug section - enable, device ID, IP, port, relay data point, both thresholds, the local key, and a Test connection button that reports what the plug answered.
+- A change to the smart-plug settings now takes effect immediately; the cached controller was reused with the old configuration until the app restarted.
+
+### Fixed (smart plug)
+- The two plug levels now have to be at least 5 points apart. Nothing stopped a 96 / 95 setting, which made the relay click on and off once per percent, wearing the contacts and cycling the charger. Enforced in the controller configuration on both platforms and in the settings screen before you save.
+
 ## [2.4.0] - 2026-11-21
 
 ### Changed (Windows)
@@ -27,8 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SmartPlugController` classifies a plug timeout as `SmartPlugError.Timeout` rather than `Unreachable`.
 
 ### Fixed (Windows)
-- **The smart plug had no settings screen.** The configuration could only be edited by hand in the JSON file, and the settings dialog rebuilt the object field by field without copying the eight plug fields, so opening and saving Settings silently reset them. The window now has a Smart Plug section - enable, device ID, IP, port, relay data point, both thresholds, the local key, and a Test connection button that reports what the plug answered.
-- A change to the smart-plug settings now takes effect immediately; the cached controller was reused with the old configuration until the app restarted.
 - **Battery history rewrote the whole file on every reading.** `Append` serialised the entire list - up to 5000 entries - once per entry, which is O(n^2) and made two unit tests take over four minutes. Writes are now coalesced: an append inside a 2-second window is deferred, and `Flush()` (called on window close) forces the pending write. In normal use a reading arrives every few minutes, so every append still writes immediately and nothing changes for users.
 
 ### Changed (repository)
