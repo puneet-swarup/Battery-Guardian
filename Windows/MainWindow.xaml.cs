@@ -65,6 +65,8 @@ namespace BatteryGuardian
         private DateTime _lastHistoryWriteUtc = DateTime.MinValue;
         private bool _updateCheckInProgress;
  private bool _plugFailureNotified;
+ private int _plugRestoreAttempts;
+ private const int MaxPlugRestoreAttempts = 6;
         private System.Windows.Controls.MenuItem? _snooze30Item;
         private System.Windows.Controls.MenuItem? _snooze1hItem;
         private System.Windows.Controls.MenuItem? _resumeAlertsItem;
@@ -612,6 +614,10 @@ namespace BatteryGuardian
 
         private void RefreshTimer_Tick(object? sender, EventArgs e)
         {
+            // Cheap when there is nothing to restore: it returns on the first
+            // check. A pending restore is retried here rather than abandoned.
+            _ = RestoreAfterSleepAsync();
+
             RefreshBatteryStatus();
 
             // The check throttles itself to once a day, so this is a no-op on
@@ -1154,6 +1160,15 @@ namespace BatteryGuardian
     ? string.Empty
     : SmartPlugSleepPolicy.Remember(controller.Status.Relay);
 
+   // Only cut the plug if there is something to put back. Cutting without a
+   // record is a one-way door: between the thresholds the rules do nothing, so
+   // nothing would ever restore the charger.
+   if (!SmartPlugSleepPolicy.CanRestore(remembered))
+   {
+    DiagnosticLog.Write("Going away: plug state unknown, left untouched so it can be recovered.");
+    return;
+   }
+
    _settings.SmartPlugStateBeforeSleep = remembered;
    SaveSettings(_settings);
 
@@ -1176,21 +1191,31 @@ namespace BatteryGuardian
    bool? restore = SmartPlugSleepPolicy.StateToRestore(_settings.SmartPlugStateBeforeSleep);
    if (restore == null) return;
 
-   // Clear first: one restore per sleep, not one per resume attempt.
-   _settings.SmartPlugStateBeforeSleep = string.Empty;
-   SaveSettings(_settings);
-
    SmartPlugController? controller = EnsureSmartPlugController();
    if (controller == null) return;
 
    SmartPlugStatus status = await controller.ApplyNowAsync(restore.Value, TimeSpan.FromSeconds(5));
    DiagnosticLog.Write($"Returned: plug restored to {(restore.Value ? "on" : "off")} ({status.Message}).");
 
-   if (status.LastError != SmartPlugError.None)
+   if (status.LastError == SmartPlugError.None)
    {
-    ShowToastNotification("Battery Guardian",
-     "The smart plug did not answer, so its state may not have been restored.");
+    _settings.SmartPlugStateBeforeSleep = string.Empty;
+    _plugRestoreAttempts = 0;
+    SaveSettings(_settings);
+    return;
    }
+
+   // Keep the record and try again on the next reading. Between the thresholds
+   // the rules do nothing, so a failed restore would otherwise leave the
+   // charger cut until the battery fell to the low level.
+   _plugRestoreAttempts++;
+   if (_plugRestoreAttempts < MaxPlugRestoreAttempts) return;
+
+   _settings.SmartPlugStateBeforeSleep = string.Empty;
+   _plugRestoreAttempts = 0;
+   SaveSettings(_settings);
+   ShowToastNotification("Battery Guardian",
+    "The smart plug did not answer, so its state may not have been restored.");
   }
   catch (Exception ex) { DiagnosticLog.WriteException("RestoreAfterSleepAsync", ex); }
  }

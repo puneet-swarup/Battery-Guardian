@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.2] - 2026-11-22
+
+### Fixed (Windows)
+- **2.5.1 described two safety rules that were not actually wired in.** The policy and its tests shipped, but the code that calls them did not: the plug was still cut when the state could not be recorded, and a failed restore was still forgotten. Both are now connected, and this release is the one that behaves as 2.5.1 described.
+
 ## [2.5.1] - 2026-11-22
 
 ### Fixed (Windows)
