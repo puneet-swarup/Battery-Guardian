@@ -87,6 +87,10 @@ Snoozing silences the alerts. It does **not** stop the plug: the app keeps
 switching the charger while a snooze is running, so a meeting does not cost you
 a night at 100%.
 
+A failure is the exception. If the plug does not answer while a snooze is
+running, the app tells you once - quietly, with no sound - because "keep
+protecting me" is a promise it cannot keep silently.
+
 If you want the plug to stop as well, turn smart-plug control off in Settings.
 That is a deliberate second step, because "stop telling me" and "stop protecting
 me" are different requests.

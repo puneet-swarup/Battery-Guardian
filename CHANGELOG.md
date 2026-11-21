@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.6] - 2026-11-21
+
+### Added
+- **A failed switch now breaks through a snooze.** Snoozing keeps the plug running, so the one thing a snooze must not hide is the plug failing to answer: you would be left believing the charger was cut when it was not. A failure is reported once per outage, silently, and the notice clears when a command succeeds again. Outside a snooze nothing changes - the ordinary alerts already carry it.
+
 ## [2.4.5] - 2026-11-21
 
 ### Changed

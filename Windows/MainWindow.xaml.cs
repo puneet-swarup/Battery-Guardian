@@ -64,6 +64,7 @@ namespace BatteryGuardian
         private readonly QuietHoursEvaluator _quietHoursEvaluator;
         private DateTime _lastHistoryWriteUtc = DateTime.MinValue;
         private bool _updateCheckInProgress;
+ private bool _plugFailureNotified;
         private System.Windows.Controls.MenuItem? _snooze30Item;
         private System.Windows.Controls.MenuItem? _snooze1hItem;
         private System.Windows.Controls.MenuItem? _resumeAlertsItem;
@@ -1082,14 +1083,28 @@ namespace BatteryGuardian
         /// </remarks>
         private async Task EvaluateSmartPlugAsync(int batteryPercent, bool known)
  {
- try
- {
- if (!_settings.SmartPlugEnabled) return;
- var controller = EnsureSmartPlugController();
- if (controller == null) return;
- await controller.EvaluateAsync(known ? batteryPercent : -1);
- }
- catch (Exception ex) { DiagnosticLog.WriteException("EvaluateSmartPlugAsync", ex); }
+  try
+  {
+   if (!_settings.SmartPlugEnabled) return;
+   var controller = EnsureSmartPlugController();
+   if (controller == null) return;
+
+   SmartPlugStatus status = await controller.EvaluateAsync(known ? batteryPercent : -1);
+
+   // A snooze silences the reminders, not the protection. A command that did
+   // not reach the plug is therefore reported once, even mid-snooze.
+   if (SmartPlugFailurePolicy.ShouldNotify(status, IsSnoozed(), _plugFailureNotified))
+   {
+    _plugFailureNotified = true;
+    ShowToastNotification("Battery Guardian",
+     "The smart plug did not respond, so the charger was not switched.");
+   }
+   else if (status.LastError == SmartPlugError.None)
+   {
+    _plugFailureNotified = false;
+   }
+  }
+  catch (Exception ex) { DiagnosticLog.WriteException("EvaluateSmartPlugAsync", ex); }
  }
 
  private SmartPlugController? EnsureSmartPlugController()

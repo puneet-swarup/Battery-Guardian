@@ -9,6 +9,7 @@ import android.os.IBinder
 import androidx.core.content.ContextCompat
 import com.puneet.batteryguardian.battery.BatteryReader
 import com.puneet.batteryguardian.data.DiagnosticLog
+import com.puneet.batteryguardian.data.Settings
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.notify.AlertNotifier
 import com.puneet.batteryguardian.core.BatteryHistoryEntry
@@ -18,6 +19,7 @@ import com.puneet.batteryguardian.data.NotificationDndDetector
 import com.puneet.batteryguardian.data.SettingsQuietHoursProvider
 import com.puneet.batteryguardian.notify.NotificationChannels
 import com.puneet.batteryguardian.widget.BatteryWidgetProvider
+import com.puneet.batteryguardian.domain.smartplug.SmartPlugFailurePolicy
 import com.puneet.batteryguardian.domain.smartplug.SmartPlugManager
 import com.puneet.batteryguardian.update.UpdateCheckPolicy
 import com.puneet.batteryguardian.update.UpdateCheckReceiver
@@ -46,6 +48,9 @@ class BatteryMonitorService : Service() {
 
  private val plugEvaluationInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
  private var lastUpdateCheckAttempt: Instant? = null
+
+ @Volatile
+ private var plugFailureNotified = false
     private var lastHistoryWriteMillis: Long = 0L
 
     private var receiver: BatteryStateReceiver? = null
@@ -281,6 +286,28 @@ class BatteryMonitorService : Service() {
     }
 
     /**
+     * A snooze silences the reminders, not the protection, so a command that did
+     * not reach the plug is reported once - quietly, without sound - even while
+     * a snooze is running. One notice per outage, not one per reading.
+     */
+    private fun reportPlugFailure(error: String?, settings: Settings) {
+        try {
+            if (SmartPlugFailurePolicy.shouldNotify(error, settings.isSnoozed(), plugFailureNotified)) {
+                plugFailureNotified = true
+                notifier.notify(
+                    "The smart plug did not respond, so the charger was not switched.",
+                    settings,
+                    suppressAudible = true
+                )
+            } else if (error.isNullOrBlank()) {
+                plugFailureNotified = false
+            }
+        } catch (t: Throwable) {
+            log.writeException("reportPlugFailure", t)
+        }
+    }
+
+    /**
      * Runs the smart-plug decision for one battery reading.
      *
      * Snooze is deliberately not consulted here. A snooze means "stop telling
@@ -298,9 +325,14 @@ class BatteryMonitorService : Service() {
  if (!plugEvaluationInFlight.compareAndSet(false, true)) return
 
  thread(name = "smartplug-eval") {
- try { controller.evaluate(percent, known) }
- catch (t: Throwable) { log.writeException("evaluateSmartPlug", t) }
- finally { plugEvaluationInFlight.set(false) }
+  try {
+   controller.evaluate(percent, known)
+   reportPlugFailure(controller.lastError, settings)
+  } catch (t: Throwable) {
+   log.writeException("evaluateSmartPlug", t)
+  } finally {
+   plugEvaluationInFlight.set(false)
+  }
  }
  }
 
