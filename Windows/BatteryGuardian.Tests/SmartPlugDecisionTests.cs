@@ -7,6 +7,32 @@ namespace BatteryGuardian.Tests
  {
  private static readonly SmartPlugConfig Cfg = new(true, 95, 15, "dev", "1.2.3.4", 6668, 1, 3);
 
+ /// <summary>
+ /// Every combination of battery position and relay state, asserted as an
+ /// outcome rather than as a mechanism.
+ ///
+ /// The bug this replaces was invisible for two releases because the only test
+ /// with an unknown relay sat between the thresholds, where doing nothing is
+ /// correct, and every turn-on test supplied a readable state. Written from the
+ /// requirement - "at 10% the charger must come back on" - rather than from the
+ /// code, so it does not inherit the code's blind spots.
+ /// </summary>
+ [Theory]
+ [InlineData(96, RelayState.On, SmartPlugDecision.Action.TurnOff)]
+ [InlineData(96, RelayState.Off, SmartPlugDecision.Action.None)]
+ [InlineData(96, RelayState.Unknown, SmartPlugDecision.Action.TurnOff)]
+ [InlineData(50, RelayState.On, SmartPlugDecision.Action.None)]
+ [InlineData(50, RelayState.Off, SmartPlugDecision.Action.None)]
+ [InlineData(50, RelayState.Unknown, SmartPlugDecision.Action.None)]
+ [InlineData(10, RelayState.On, SmartPlugDecision.Action.None)]
+ [InlineData(10, RelayState.Off, SmartPlugDecision.Action.TurnOn)]
+ [InlineData(10, RelayState.Unknown, SmartPlugDecision.Action.TurnOn)]
+ public void DecisionMatrix(int batteryPercent, RelayState relay, SmartPlugDecision.Action expected)
+ {
+  var decision = SmartPlugDecision.Evaluate(batteryPercent, true, relay, Cfg);
+  Assert.Equal(expected, decision.Action);
+ }
+
  [Fact]
  public void DisabledProducesNoAction()
  {

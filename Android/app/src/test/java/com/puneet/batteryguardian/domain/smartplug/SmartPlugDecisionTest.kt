@@ -20,6 +20,37 @@ class SmartPlugDecisionTest {
   assertNull(justEnough.validationError())
  }
 
+ /**
+  * Every combination of battery position and relay state, asserted as an
+  * outcome rather than as a mechanism.
+  *
+  * The bug this replaces was invisible for two releases: the only unknown-relay
+  * test sat between the thresholds, where doing nothing is correct, and every
+  * turn-on test supplied a readable state.
+  */
+ @Test
+ fun decisionMatrix() {
+  val rows = listOf(
+   Triple(96, RelayState.ON, SmartPlugDecision.Action.TURN_OFF),
+   Triple(96, RelayState.OFF, SmartPlugDecision.Action.NONE),
+   Triple(96, RelayState.UNKNOWN, SmartPlugDecision.Action.TURN_OFF),
+   Triple(50, RelayState.ON, SmartPlugDecision.Action.NONE),
+   Triple(50, RelayState.OFF, SmartPlugDecision.Action.NONE),
+   Triple(50, RelayState.UNKNOWN, SmartPlugDecision.Action.NONE),
+   Triple(10, RelayState.ON, SmartPlugDecision.Action.NONE),
+   Triple(10, RelayState.OFF, SmartPlugDecision.Action.TURN_ON),
+   Triple(10, RelayState.UNKNOWN, SmartPlugDecision.Action.TURN_ON)
+  )
+
+  for ((percent, relay, expected) in rows) {
+   assertEquals(
+    "at $percent percent with the relay $relay",
+    expected,
+    SmartPlugDecision.evaluate(percent, true, relay, cfg).action
+   )
+  }
+ }
+
  @Test
  fun disabledConfigProducesNoAction() {
  val d = SmartPlugDecision.evaluate(99, true, RelayState.ON, cfg.copy(enabled = false))
