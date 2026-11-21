@@ -81,9 +81,21 @@ class SmartPlugDecisionTest {
  }
 
  @Test
- fun unknownRelayQueriesFirst() {
- val d = SmartPlugDecision.evaluate(50, true, RelayState.UNKNOWN, cfg)
- assertEquals(SmartPlugDecision.Action.QUERY, d.action)
+ fun anUnknownRelayStateStillTurnsThePlugOffAtTheHighThreshold() {
+  val d = SmartPlugDecision.evaluate(96, true, RelayState.UNKNOWN, cfg)
+  assertEquals(SmartPlugDecision.Action.TURN_OFF, d.action)
+ }
+
+ @Test
+ fun anUnknownRelayStateStillTurnsThePlugOnAtTheLowThreshold() {
+  val d = SmartPlugDecision.evaluate(10, true, RelayState.UNKNOWN, cfg)
+  assertEquals(SmartPlugDecision.Action.TURN_ON, d.action)
+ }
+
+ @Test
+ fun betweenThresholdsAnUnknownRelayStateDoesNothing() {
+  val d = SmartPlugDecision.evaluate(50, true, RelayState.UNKNOWN, cfg)
+  assertEquals(SmartPlugDecision.Action.NONE, d.action)
  }
 
  @Test

@@ -44,7 +44,7 @@ namespace BatteryGuardian.SmartPlug
  /// </summary>
  public static class SmartPlugDecision
  {
- public enum Action { None, TurnOn, TurnOff, Query }
+ public enum Action { None, TurnOn, TurnOff }
 
  public sealed record Decision(Action Action, string Reason);
 
@@ -53,13 +53,23 @@ namespace BatteryGuardian.SmartPlug
  if (!config.Enabled) return new Decision(Action.None, "Smart-plug control disabled.");
  if (!batteryKnown || batteryPercent < 0 || batteryPercent > 100)
  return new Decision(Action.None, "Battery percentage unknown; no action.");
- if (relay == RelayState.Unknown)
- return new Decision(Action.Query, "Relay state unknown; query before acting.");
-
- if (batteryPercent >= config.HighThreshold && relay == RelayState.On)
- return new Decision(Action.TurnOff, "Battery >= high threshold; turn plug OFF.");
- if (batteryPercent <= config.LowThreshold && relay == RelayState.Off)
- return new Decision(Action.TurnOn, "Battery <= low threshold; turn plug ON.");
+ // The relay state decides whether a command is needed, never whether one is
+ // allowed. Requiring a successful state read deadlocked the feature: when the
+ // plug did not answer, or answered without the relay data point, the app did
+ // nothing at all - which is why turning the charger back on had to be done by
+ // hand. Turning an already-on plug on is harmless, and so is the reverse.
+ if (batteryPercent >= config.HighThreshold)
+ {
+  return relay == RelayState.Off
+   ? new Decision(Action.None, "Battery >= high threshold, plug already OFF.")
+   : new Decision(Action.TurnOff, "Battery >= high threshold; turn plug OFF.");
+ }
+ if (batteryPercent <= config.LowThreshold)
+ {
+  return relay == RelayState.On
+   ? new Decision(Action.None, "Battery <= low threshold, plug already ON.")
+   : new Decision(Action.TurnOn, "Battery <= low threshold; turn plug ON.");
+ }
  return new Decision(Action.None, "Within thresholds; retain current relay state.");
  }
  }

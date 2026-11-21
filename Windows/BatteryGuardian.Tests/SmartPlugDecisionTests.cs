@@ -64,10 +64,26 @@ namespace BatteryGuardian.Tests
  }
 
  [Fact]
- public void UnknownRelayQueriesFirst()
+ public void AnUnknownRelayStateStillTurnsThePlugOffAtTheHighThreshold()
  {
- var d = SmartPlugDecision.Evaluate(50, true, RelayState.Unknown, Cfg);
- Assert.Equal(SmartPlugDecision.Action.Query, d.Action);
+  var d = SmartPlugDecision.Evaluate(96, true, RelayState.Unknown, Cfg);
+  Assert.Equal(SmartPlugDecision.Action.TurnOff, d.Action);
+ }
+
+ [Fact]
+ public void AnUnknownRelayStateStillTurnsThePlugOnAtTheLowThreshold()
+ {
+  // This is the case that sent the user to the phone app: the plug had been
+  // off for hours, the state read came back unknown, and the app did nothing.
+  var d = SmartPlugDecision.Evaluate(10, true, RelayState.Unknown, Cfg);
+  Assert.Equal(SmartPlugDecision.Action.TurnOn, d.Action);
+ }
+
+ [Fact]
+ public void BetweenThresholdsAnUnknownRelayStateDoesNothing()
+ {
+  var d = SmartPlugDecision.Evaluate(50, true, RelayState.Unknown, Cfg);
+  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 
  [Fact]

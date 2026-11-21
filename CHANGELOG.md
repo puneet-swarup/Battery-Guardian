@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.4] - 2026-11-21
+
+### Fixed (smart plug)
+- **Switching the charger back on never happened.** The decision refused to act unless it had first read the relay state successfully, and treated an unknown state as "do nothing". Cutting the charger at the high threshold worked because the plug was on and answering; hours later, with the plug idle, the state read came back unknown and the app sat there - so the plug had to be turned back on by hand. The battery level now decides the action and the relay state only decides whether the command is redundant: turning an already-on plug on is harmless, and so is the reverse. The unused `Query` action is gone.
+
 ## [2.4.3] - 2026-11-21
 
 ### Changed

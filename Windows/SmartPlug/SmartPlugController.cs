@@ -77,7 +77,6 @@ namespace BatteryGuardian.SmartPlug
      await RunWithRetryAsync(() => _plug.TurnOnAsync(token), token).ConfigureAwait(false);
      relay = RelayState.On;
      break;
-    case SmartPlugDecision.Action.Query:
     case SmartPlugDecision.Action.None:
     default:
      break;

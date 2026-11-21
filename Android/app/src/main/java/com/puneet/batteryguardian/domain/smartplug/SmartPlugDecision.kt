@@ -34,15 +34,24 @@ data class SmartPlugConfig(
 }
 
 object SmartPlugDecision {
- enum class Action { NONE, TURN_ON, TURN_OFF, QUERY }
+ enum class Action { NONE, TURN_ON, TURN_OFF }
  data class Decision(val action: Action, val reason: String)
 
  fun evaluate(batteryPercent: Int, batteryKnown: Boolean, relay: RelayState, config: SmartPlugConfig): Decision {
  if (!config.enabled) return Decision(Action.NONE, "Disabled.")
  if (!batteryKnown || batteryPercent < 0 || batteryPercent > 100) return Decision(Action.NONE, "Battery unknown.")
- if (relay == RelayState.UNKNOWN) return Decision(Action.QUERY, "Relay unknown; query first.")
- if (batteryPercent >= config.highThreshold && relay == RelayState.ON) return Decision(Action.TURN_OFF, "Battery >= high; turn OFF.")
- if (batteryPercent <= config.lowThreshold && relay == RelayState.OFF) return Decision(Action.TURN_ON, "Battery <= low; turn ON.")
+ // The relay state decides whether a command is needed, never whether one is
+ // allowed. Requiring a successful read deadlocked the feature: when the plug
+ // did not answer, the app did nothing, so turning the charger back on had to
+ // be done by hand.
+ if (batteryPercent >= config.highThreshold) {
+  return if (relay == RelayState.OFF) Decision(Action.NONE, "Battery >= high; plug already OFF.")
+  else Decision(Action.TURN_OFF, "Battery >= high; turn OFF.")
+ }
+ if (batteryPercent <= config.lowThreshold) {
+  return if (relay == RelayState.ON) Decision(Action.NONE, "Battery <= low; plug already ON.")
+  else Decision(Action.TURN_ON, "Battery <= low; turn ON.")
+ }
  return Decision(Action.NONE, "Within thresholds.")
  }
 }
