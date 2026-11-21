@@ -280,6 +280,14 @@ class BatteryMonitorService : Service() {
         }
     }
 
+    /**
+     * Runs the smart-plug decision for one battery reading.
+     *
+     * Snooze is deliberately not consulted here. A snooze means "stop telling
+     * me", not "stop protecting me": the reminders go quiet and the plug carries
+     * on switching the charger. Checking the snooze here would quietly turn it
+     * into a way to disable the protection.
+     */
     private fun evaluateSmartPlug(percent: Int, known: Boolean) {
  val settings = settingsRepository.load()
  val controller = smartPlugManager.controllerFor(settings) ?: return

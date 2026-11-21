@@ -81,6 +81,16 @@ Open Settings from the tray menu. Under Smart Plug set: enable control, device
 ID, device IP, Local Key (stored with DPAPI, CurrentUser scope), port (default
 6668), relay datapoint (default 1), switch OFF at (high), switch ON at (low).
 
+### Snooze and the plug
+
+Snoozing silences the alerts. It does **not** stop the plug: the app keeps
+switching the charger while a snooze is running, so a meeting does not cost you
+a night at 100%.
+
+If you want the plug to stop as well, turn smart-plug control off in Settings.
+That is a deliberate second step, because "stop telling me" and "stop protecting
+me" are different requests.
+
 ### Android
 
 Open Settings and scroll to Smart Plug (Tuya). Enter the same fields. The Local

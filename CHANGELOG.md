@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.5] - 2026-11-21
+
+### Changed
+- **Snooze now says what it does.** Snoozing has always silenced the alerts while leaving smart-plug control running - "stop telling me, keep protecting me" - but nothing said so, and the opposite reading is just as reasonable. The snooze menu items carry that sentence as a tooltip, the smart-plug guide has a section on it, and the code comments at both call sites record the decision so it is not quietly reversed later.
+
 ## [2.4.4] - 2026-11-21
 
 ### Fixed (smart plug)

@@ -64,7 +64,7 @@
 
     <!-- About screen -->
     <string name="about_title">About</string>
-    <string name="about_body">Battery Guardian monitors your battery and warns you when you should unplug the charger at high charge or plug in at low charge. Keeping a lithium-ion battery away from prolonged 100%% and deep discharge extends its lifespan.\n\nYou can also let it switch a Tuya smart plug at your thresholds, so the charger is cut even when you are away from the device.</string>
+    <string name="about_body">Battery Guardian monitors your battery and warns you when you should unplug the charger at high charge or plug in at low charge. Keeping a lithium-ion battery away from prolonged 100%% and deep discharge extends its lifespan.\n\nYou can also let it switch a Tuya smart plug at your thresholds, so the charger is cut even when you are away from the device. Snoozing silences the reminders; the plug keeps working.</string>
     <string name="about_version_fmt">Version %1$s (build %2$d)</string>
     <string name="about_github">View on GitHub</string>
     <string name="about_tuya_link">What is a Tuya smart plug?</string>

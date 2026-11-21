@@ -86,7 +86,7 @@ Both are built and tested automatically on every push and pull request by GitHub
 - **Battery Health**: Displays the current full-charge capacity vs. original design capacity (wear level), when the laptop reports it.
 - **Native app icon** — battery-themed icon across the window, taskbar, and .exe.
 - **Automatic Update Check**: Notifies you when a newer version is available and offers a one-click link to the download page.
-- **Snooze**: Temporarily silence alerts for 30 minutes or 1 hour. Useful during meetings or presentations. Alerts resume automatically when the snooze expires.
+- **Snooze**: Temporarily silence alerts for 30 minutes or 1 hour. Useful during meetings or presentations. Alerts resume automatically when the snooze expires. Snoozing silences the reminders only - smart plug control keeps running.
 - **Diagnostic logging**: Optional toggle in Settings for troubleshooting.
 - **Battery history & trends**: Records periodic readings locally and shows average/range, time spent in the ideal charge zone, and an estimated annual wear from your habits.
 - **Quiet hours / Focus Assist aware**: Silence audible alerts during a configurable daily window or while Windows Focus Assist is on (the notification still appears).

@@ -185,11 +185,19 @@ namespace BatteryGuardian
 
             contextMenu.Items.Add(new System.Windows.Controls.Separator());
 
-            _snooze30Item = new System.Windows.Controls.MenuItem { Header = "Snooze 30 minutes" };
+            _snooze30Item = new System.Windows.Controls.MenuItem
+            {
+                Header = "Snooze 30 minutes",
+                ToolTip = "Silences alerts. Smart plug control keeps running."
+            };
             _snooze30Item.Click += (s, e) => Snooze(TimeSpan.FromMinutes(30));
             contextMenu.Items.Add(_snooze30Item);
 
-            _snooze1hItem = new System.Windows.Controls.MenuItem { Header = "Snooze 1 hour" };
+            _snooze1hItem = new System.Windows.Controls.MenuItem
+            {
+                Header = "Snooze 1 hour",
+                ToolTip = "Silences alerts. Smart plug control keeps running."
+            };
             _snooze1hItem.Click += (s, e) => Snooze(TimeSpan.FromHours(1));
             contextMenu.Items.Add(_snooze1hItem);
 
@@ -1063,6 +1071,15 @@ namespace BatteryGuardian
             _alarmTimer.Start();
         }
 
+        /// <summary>
+        /// Runs the smart-plug decision for one battery reading.
+        /// </summary>
+        /// <remarks>
+        /// Snooze is deliberately not consulted here. A snooze means "stop
+        /// telling me", not "stop protecting me": the reminders go quiet and the
+        /// plug carries on switching the charger. Adding an IsSnoozed() check
+        /// would quietly turn snooze into a way to disable the protection.
+        /// </remarks>
         private async Task EvaluateSmartPlugAsync(int batteryPercent, bool known)
  {
  try
