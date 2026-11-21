@@ -15,6 +15,13 @@ namespace BatteryGuardian.SmartPlug
  int RelayDp,
  int ProtocolVersion)
  {
+ /// <summary>
+ /// How far apart the two levels must be. A relay that switches on a one-point
+ /// change chatters as the battery moves, which wears the contacts and cycles
+ /// the charger - the opposite of what the feature is for.
+ /// </summary>
+ public const int MinimumGapPercent = 5;
+
  public static SmartPlugConfig Disabled() => new(false, 95, 15, "", "", 6668, 1, 3);
 
  public string? ValidationError()
@@ -24,6 +31,8 @@ namespace BatteryGuardian.SmartPlug
  if (Port <= 0 || Port > 65535) return "Port must be between 1 and 65535.";
  if (LowThreshold < 0 || HighThreshold > 100) return "Thresholds must be within 0-100.";
  if (LowThreshold >= HighThreshold) return "Low threshold must be below high threshold.";
+ if (HighThreshold - LowThreshold < MinimumGapPercent)
+  return "Thresholds must be at least " + MinimumGapPercent + " points apart.";
  return null;
  }
  }

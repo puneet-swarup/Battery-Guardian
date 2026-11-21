@@ -2,10 +2,22 @@ package com.puneet.batteryguardian.domain.smartplug
 
 import com.puneet.batteryguardian.data.tuya.RelayState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SmartPlugDecisionTest {
  private val cfg = SmartPlugConfig(enabled = true, highThreshold = 95, lowThreshold = 15)
+
+ @Test
+ fun thresholdsTooCloseTogetherAreRejected() {
+  // A five-point gap is the floor: below it the relay clicks on every percent.
+  val narrow = cfg.copy(highThreshold = 92, lowThreshold = 90)
+  assertNotNull(narrow.validationError())
+
+  val justEnough = cfg.copy(highThreshold = 95, lowThreshold = 90)
+  assertNull(justEnough.validationError())
+ }
 
  @Test
  fun disabledConfigProducesNoAction() {

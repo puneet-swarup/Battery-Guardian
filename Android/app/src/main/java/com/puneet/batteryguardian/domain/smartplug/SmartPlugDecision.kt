@@ -18,7 +18,18 @@ data class SmartPlugConfig(
  if (port !in 1..65535) return "Port must be 1-65535."
  if (lowThreshold < 0 || highThreshold > 100) return "Thresholds must be 0-100."
  if (lowThreshold >= highThreshold) return "Low threshold must be below high threshold."
+ if (highThreshold - lowThreshold < MINIMUM_GAP_PERCENT)
+  return "Thresholds must be at least $MINIMUM_GAP_PERCENT points apart."
  return null
+ }
+
+ companion object {
+  /**
+   * How far apart the two levels must be. A relay that switches on a
+   * one-point change chatters as the battery moves, which wears the
+   * contacts and cycles the charger.
+   */
+  const val MINIMUM_GAP_PERCENT = 5
  }
 }
 
