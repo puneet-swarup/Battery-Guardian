@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The smart plug had no settings screen.** The configuration could only be edited by hand in the JSON file, and the settings dialog rebuilt the object field by field without copying the eight plug fields, so opening and saving Settings silently reset them. The window now has a Smart Plug section - enable, device ID, IP, port, relay data point, both thresholds, the local key, and a Test connection button that reports what the plug answered.
 - A change to the smart-plug settings now takes effect immediately; the cached controller was reused with the old configuration until the app restarted.
 
-### Fixed (Windows)
 - **Settings could lose fields without a word.** The dialog rebuilt the settings object property by property, so any field added later was dropped on every save - which is why the smart-plug configuration kept resetting. It now clones the object, and tests fail if a writable property is missing from the clone or from the JSON round-trip.
 - **The update check only ran at startup.** An app left running in the tray for a week never looked again, despite promising a daily check. The 24-hour rule is now a tested policy, checked on the refresh tick as well.
 
