@@ -23,7 +23,6 @@ import com.puneet.batteryguardian.update.UpdateCheckPolicy
 import com.puneet.batteryguardian.update.UpdateCheckReceiver
 import java.time.Instant
 import kotlin.concurrent.thread
-import java.time.Instant
 
 /**
  * Foreground service that keeps battery monitoring alive under Android's
