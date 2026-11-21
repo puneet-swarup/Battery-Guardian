@@ -25,37 +25,9 @@ namespace BatteryGuardian
         {
             InitializeComponent();
 
-            // Preserve every persisted field, including the ones this window does
-            // not edit, so saving here never clobbers unrelated settings.
-            Settings = new Settings
-            {
-                HighBatteryThreshold = currentSettings.HighBatteryThreshold,
-                LowBatteryThreshold = currentSettings.LowBatteryThreshold,
-                AlertRepeatIntervalSeconds = currentSettings.AlertRepeatIntervalSeconds,
-                CheckForUpdatesAutomatically = currentSettings.CheckForUpdatesAutomatically,
-                LastUpdateCheckUtc = currentSettings.LastUpdateCheckUtc,
-                DiagnosticLoggingEnabled = currentSettings.DiagnosticLoggingEnabled,
-                SnoozedUntilUtc = currentSettings.SnoozedUntilUtc,
-                HistoryEnabled = currentSettings.HistoryEnabled,
-                IdealZoneLowPercent = currentSettings.IdealZoneLowPercent,
-                IdealZoneHighPercent = currentSettings.IdealZoneHighPercent,
-                QuietHoursEnabled = currentSettings.QuietHoursEnabled,
-                QuietHoursStartMinutes = currentSettings.QuietHoursStartMinutes,
-                QuietHoursEndMinutes = currentSettings.QuietHoursEndMinutes,
-                RespectFocusAssist = currentSettings.RespectFocusAssist,
-                LastAppliedChargeLimitPercent = currentSettings.LastAppliedChargeLimitPercent,
-
-                // Without these eight, every save reset the smart-plug
-                // configuration to its defaults.
-                SmartPlugEnabled = currentSettings.SmartPlugEnabled,
-                SmartPlugHighThreshold = currentSettings.SmartPlugHighThreshold,
-                SmartPlugLowThreshold = currentSettings.SmartPlugLowThreshold,
-                SmartPlugDeviceId = currentSettings.SmartPlugDeviceId,
-                SmartPlugHost = currentSettings.SmartPlugHost,
-                SmartPlugPort = currentSettings.SmartPlugPort,
-                SmartPlugRelayDp = currentSettings.SmartPlugRelayDp,
-                SmartPlugProtocolVersion = currentSettings.SmartPlugProtocolVersion
-            };
+            // One clone rather than a hand-written list of fields: the list
+            // went stale the moment the smart plug added eight of them.
+            Settings = currentSettings.Clone();
 
             HighThresholdBox.Text = Settings.HighBatteryThreshold.ToString();
             LowThresholdBox.Text = Settings.LowBatteryThreshold.ToString();

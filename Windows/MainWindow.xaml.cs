@@ -463,15 +463,12 @@ namespace BatteryGuardian
 
             try
             {
-                if (!manualCheck)
+                if (!manualCheck && !UpdateService.IsCheckDue(
+                        _settings.CheckForUpdatesAutomatically,
+                        _settings.LastUpdateCheckUtc,
+                        DateTime.UtcNow))
                 {
-                    if (!_settings.CheckForUpdatesAutomatically) return;
-
-                    if (_settings.LastUpdateCheckUtc.HasValue &&
-                        (DateTime.UtcNow - _settings.LastUpdateCheckUtc.Value).TotalHours < 24)
-                    {
-                        return;
-                    }
+                    return;
                 }
 
                 Version? currentVersion = GetCurrentVersion();
@@ -589,7 +586,15 @@ namespace BatteryGuardian
             // Do NOT dispose _warningIcon — it's a shared system icon.
         }
 
-        private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshBatteryStatus();
+        private void RefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            RefreshBatteryStatus();
+
+            // The check throttles itself to once a day, so this is a no-op on
+            // almost every tick. Without it a tray app that runs for weeks only
+            // ever checked at startup.
+            _ = CheckForUpdatesAsync(manualCheck: false);
+        }
 
         private void AlarmTimer_Tick(object? sender, EventArgs e)
         {

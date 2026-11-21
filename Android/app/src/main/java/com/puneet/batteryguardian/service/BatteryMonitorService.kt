@@ -19,6 +19,9 @@ import com.puneet.batteryguardian.data.SettingsQuietHoursProvider
 import com.puneet.batteryguardian.notify.NotificationChannels
 import com.puneet.batteryguardian.widget.BatteryWidgetProvider
 import com.puneet.batteryguardian.domain.smartplug.SmartPlugManager
+import com.puneet.batteryguardian.update.UpdateCheckPolicy
+import com.puneet.batteryguardian.update.UpdateCheckReceiver
+import java.time.Instant
 import kotlin.concurrent.thread
 import java.time.Instant
 
@@ -43,6 +46,7 @@ class BatteryMonitorService : Service() {
  private lateinit var smartPlugManager: SmartPlugManager
 
  private val plugEvaluationInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
+ private var lastUpdateCheckAttempt: Instant? = null
     private var lastHistoryWriteMillis: Long = 0L
 
     private var receiver: BatteryStateReceiver? = null
@@ -148,6 +152,7 @@ class BatteryMonitorService : Service() {
                 OngoingNotification.update(this, result.snapshot)
                 BatteryWidgetProvider.refreshAll(this)
  evaluateSmartPlug(snapshot.percent, snapshot.percent >= 0)
+ maybeCheckForUpdates()
             }
 
             val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -251,6 +256,30 @@ class BatteryMonitorService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * The update check used to be unreachable: UpdateCheckReceiver was declared
+     * in the manifest and nothing ever sent it the broadcast, so the automatic
+     * check never ran. Trigger it from the battery broadcast, gated by the
+     * policy so it fires at most once a day.
+     */
+    private fun maybeCheckForUpdates() {
+        try {
+            val now = Instant.now()
+            val settings = settingsRepository.load()
+            if (!UpdateCheckPolicy.isDue(settings, now)) return
+
+            // Battery broadcasts keep arriving between firing the check and the
+            // receiver writing its timestamp. Do not fire twice in that gap.
+            val lastAttempt = lastUpdateCheckAttempt
+            if (lastAttempt != null && java.time.Duration.between(lastAttempt, now).toMinutes() < 10) return
+
+            lastUpdateCheckAttempt = now
+            sendBroadcast(android.content.Intent(this, UpdateCheckReceiver::class.java))
+        } catch (t: Throwable) {
+            log.writeException("maybeCheckForUpdates", t)
+        }
+    }
 
     private fun evaluateSmartPlug(percent: Int, known: Boolean) {
  val settings = settingsRepository.load()

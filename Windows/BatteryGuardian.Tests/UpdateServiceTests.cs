@@ -10,6 +10,40 @@ namespace BatteryGuardian.Tests
         // ============================================================
 
         [Fact]
+        public void CheckIsDueWhenNeverChecked()
+        {
+            Assert.True(UpdateService.IsCheckDue(true, null, new DateTime(2026, 11, 21, 10, 0, 0, DateTimeKind.Utc)));
+        }
+
+        [Fact]
+        public void CheckIsNotDueWithinTheDay()
+        {
+            var now = new DateTime(2026, 11, 21, 10, 0, 0, DateTimeKind.Utc);
+            Assert.False(UpdateService.IsCheckDue(true, now.AddHours(-23), now));
+        }
+
+        [Fact]
+        public void CheckIsDueAfterTheDay()
+        {
+            var now = new DateTime(2026, 11, 21, 10, 0, 0, DateTimeKind.Utc);
+            Assert.True(UpdateService.IsCheckDue(true, now.AddHours(-24), now));
+        }
+
+        [Fact]
+        public void CheckIsNotDueWhenTheUserTurnedItOff()
+        {
+            var now = new DateTime(2026, 11, 21, 10, 0, 0, DateTimeKind.Utc);
+            Assert.False(UpdateService.IsCheckDue(false, null, now));
+        }
+
+        [Fact]
+        public void AFutureTimestampDoesNotSilenceUpdatesForADay()
+        {
+            var now = new DateTime(2026, 11, 21, 10, 0, 0, DateTimeKind.Utc);
+            Assert.True(UpdateService.IsCheckDue(true, now.AddHours(1), now));
+        }
+
+        [Fact]
         public void ParseTagToVersion_StandardSemver_ReturnsVersion()
         {
             Assert.Equal(new Version(1, 9, 0, 0), UpdateService.ParseTagToVersion("v1.9.0"));

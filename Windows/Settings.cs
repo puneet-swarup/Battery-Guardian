@@ -35,5 +35,12 @@ namespace BatteryGuardian
  public int SmartPlugPort { get; set; } = 6668;
  public int SmartPlugRelayDp { get; set; } = 1;
  public string SmartPlugProtocolVersion { get; set; } = "3.5";
+
+ /// <summary>
+ /// Copy of every persisted field. Use this rather than copying property by
+ /// property: the settings dialog used to do that by hand and quietly dropped
+ /// the smart-plug fields, so every save reset them to their defaults.
+ /// </summary>
+ public Settings Clone() => (Settings)MemberwiseClone();
  }
 }

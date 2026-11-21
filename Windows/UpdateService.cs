@@ -90,6 +90,22 @@ namespace BatteryGuardian
         }
 
         /// <summary>
+        /// Whether an automatic check is due. Pure so it can be tested: the
+        /// window only checked at startup, so an app left running in the tray
+        /// for a week never looked again despite promising a daily check.
+        /// </summary>
+        public static bool IsCheckDue(bool checkAutomatically, DateTime? lastCheckUtc, DateTime nowUtc, int intervalHours = 24)
+        {
+            if (!checkAutomatically) return false;
+            if (!lastCheckUtc.HasValue) return true;
+
+            // A clock that jumped backwards must not silence updates for a day.
+            if (lastCheckUtc.Value > nowUtc) return true;
+
+            return (nowUtc - lastCheckUtc.Value).TotalHours >= intervalHours;
+        }
+
+        /// <summary>
         /// Parses a tag like "v1.9.0", "1.9", or "v2" into a Version.
         /// Returns null if the tag cannot be parsed.
         /// Exposed as public static so it can be unit-tested.
