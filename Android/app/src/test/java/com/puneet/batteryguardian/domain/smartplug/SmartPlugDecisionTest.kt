@@ -12,10 +12,11 @@ class SmartPlugDecisionTest {
  @Test
  fun thresholdsTooCloseTogetherAreRejected() {
   // A five-point gap is the floor: below it the relay clicks on every percent.
-  val narrow = cfg.copy(highThreshold = 92, lowThreshold = 90)
+  // device id and host are required, so set them: this test is about the gap
+  val narrow = cfg.copy(highThreshold = 92, lowThreshold = 90, deviceId = "id", host = "1.2.3.4")
   assertNotNull(narrow.validationError())
 
-  val justEnough = cfg.copy(highThreshold = 95, lowThreshold = 90)
+  val justEnough = cfg.copy(highThreshold = 95, lowThreshold = 90, deviceId = "id", host = "1.2.3.4")
   assertNull(justEnough.validationError())
  }
 
