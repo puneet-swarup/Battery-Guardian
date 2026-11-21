@@ -86,3 +86,7 @@ lockfile
 summary.json
 summary.md
 tinytuya_core_reference.py
+
+# Patches are deliverables you apply, not files the project ships. Keeping them
+# out of the index stops a downloaded .patch ending up in a commit.
+*.patch
