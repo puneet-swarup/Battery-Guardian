@@ -7,12 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.4.1] - 2026-11-21
+## [2.4.2] - 2026-11-21
 
 ### Fixed (Windows)
-- **The smart plug had no settings screen.** The configuration could only be edited by hand in the JSON file, and the settings dialog rebuilt the object field by field without copying the eight plug fields, so opening and saving Settings silently reset them. The window now has a Smart Plug section - enable, device ID, IP, port, relay data point, both thresholds, the local key, and a Test connection button that reports what the plug answered.
-- A change to the smart-plug settings now takes effect immediately; the cached controller was reused with the old configuration until the app restarted.
-
 - **Settings could lose fields without a word.** The dialog rebuilt the settings object property by property, so any field added later was dropped on every save - which is why the smart-plug configuration kept resetting. It now clones the object, and tests fail if a writable property is missing from the clone or from the JSON round-trip.
 - **The update check only ran at startup.** An app left running in the tray for a week never looked again, despite promising a daily check. The 24-hour rule is now a tested policy, checked on the refresh tick as well.
 
@@ -21,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed (smart plug)
 - **The plug only switched when the settings were saved.** One evaluation could hold the controller for up to two minutes of retries, every 30-second reading added another waiter, and the queue never drained - so the app appeared to ignore the battery entirely until a save rebuilt the controller. Evaluations are now skipped when one is already running, and a single evaluation is capped at 20 seconds so it always finishes inside a refresh. Android had the same shape: a thread per reading, queued on one lock.
+
+## [2.4.1] - 2026-11-21
+
+### Fixed (Windows)
+- **The smart plug had no settings screen.** The configuration could only be edited by hand in the JSON file, and the settings dialog rebuilt the object field by field without copying the eight plug fields, so opening and saving Settings silently reset them. The window now has a Smart Plug section - enable, device ID, IP, port, relay data point, both thresholds, the local key, and a Test connection button that reports what the plug answered.
+- A change to the smart-plug settings now takes effect immediately; the cached controller was reused with the old configuration until the app restarted.
+
+
+
+### Fixed (smart plug)
 - The two plug levels now have to be at least 5 points apart. Nothing stopped a 96 / 95 setting, which made the relay click on and off once per percent, wearing the contacts and cycling the charger. Enforced in the controller configuration on both platforms and in the settings screen before you save.
 
 ## [2.4.0] - 2026-11-21
