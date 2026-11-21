@@ -5,18 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.0] - 2026-11-16
-
-### Added
-- **Smart-plug control** on Windows and Android. The app switches a Tuya plug off at the high threshold and on at the low threshold, holding state between them so the relay does not chatter. Settings take the device id, IP, local key, port and relay data point; the key is stored with DPAPI on Windows and the Android Keystore on the phone.
-- `docs/smart-plug.md`, the reference for the feature on both platforms.
-
-### Fixed
-- Windows build errors in the smart-plug code.
-
-> The protocol in this release was a private implementation that does not match 3.4/3.5 firmware, so plug control did not work against real hardware. It is replaced in the next release; see Unreleased.
-
 ## [Unreleased]
+
+## [2.4.0] - 2026-11-21
 
 ### Changed (Windows)
 - **Smart plug control now uses the Tuya LAN SDK.** `TuyaSmartPlug` is an adapter over `TuyaLan.TuyaLocalDevice` (NuGet `TuyaLan` 2.0.0) instead of a private copy of the protocol. The copy was built from a description that does not match real 3.5 firmware - a frame layout without the reserved bytes, IV, tag or footer; the 3.4 session-key derivation on a 3.5 device; control on `0x07` with a bare `dps` body; and the status query on `0x08`, which is a push. It could not have switched a physical plug. Removed: `TuyaCrypto`, `TuyaMessageCodec`, `TuyaMessageCipher`, `TuyaSession`, `TuyaSession_Messaging` and their two test files.
@@ -44,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Docs
 - `docs/smart-plug.md` protocol section rewritten: it documented the incorrect wire format as if it were fact.
+
+## [2.3.0] - 2026-11-16
+
+### Added
+- **Smart-plug control** on Windows and Android. The app switches a Tuya plug off at the high threshold and on at the low threshold, holding state between them so the relay does not chatter. Settings take the device id, IP, local key, port and relay data point; the key is stored with DPAPI on Windows and the Android Keystore on the phone.
+- `docs/smart-plug.md`, the reference for the feature on both platforms.
+
+### Fixed
+- Windows build errors in the smart-plug code.
+
+> The protocol in this release was a private implementation that does not match 3.4/3.5 firmware, so plug control did not work against real hardware. It is replaced in the next release; see Unreleased.
 
 ## [2.2.0] - 2026-11-06
 
