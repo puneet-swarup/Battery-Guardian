@@ -15,6 +15,29 @@ So `v2.4.0` becomes `2.4.0` on both, and Android version code `20400`. Both
 workflows need full history and tags, which is why they check out with
 `fetch-depth: 0`.
 
+## A fix that is not tagged reaches nobody
+
+The updater compares the running version against the latest release **tag**. So
+a change on `main` with no tag is invisible to every installed copy, however
+correct it is. Functional work is not finished when it is pushed; it is finished
+when it is tagged.
+
+The same rule covers the changelog: the release body is taken from the section
+for that tag, and the release job now **fails** when the section is missing. A
+tag without an entry produces a red build, not a release page saying
+`Release 2.4.1`.
+
+## Which version
+
+| change | bump | example |
+|---|---|---|
+| a bug fix, no new surface | patch | `2.4.0` to `2.4.1` |
+| a new feature or setting | minor | `2.4.1` to `2.5.0` |
+| a change that breaks saved settings, the file format, or a documented behaviour | major | `2.5.0` to `3.0.0` |
+
+When in doubt: if a user could notice a difference they did not ask for, it is
+at least a minor.
+
 ## Steps
 
 1. **Write the changelog entry.** Move what is under `## [Unreleased]` in

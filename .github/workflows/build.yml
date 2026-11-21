@@ -78,11 +78,20 @@ jobs:
       - name: Release notes from the changelog
         run: |
           python3 - <<'EOF'
-          import os, re
+          import os, re, sys
           tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
           text = open("CHANGELOG.md", encoding="utf-8").read()
           m = re.search(rf"(?ms)^## \[{re.escape(tag)}\].*?(?=^## \[|\Z)", text)
-          body = m.group(0).strip() if m else f"Release {tag}"
+
+          # Fail rather than fall back. A release whose notes are a placeholder
+          # means the tag was cut without a changelog entry, and that is exactly
+          # the mistake this step exists to prevent.
+          if not m:
+              print(f"::error::CHANGELOG.md has no section for {tag}. "
+                    f"Add '## [{tag}] - YYYY-MM-DD' before tagging.")
+              sys.exit(1)
+
+          body = m.group(0).strip()
           open("notes.md", "w", encoding="utf-8").write(body + "\n")
           print(body[:400])
           EOF
