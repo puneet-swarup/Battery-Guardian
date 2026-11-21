@@ -44,6 +44,10 @@ commands, on JDK 17 and .NET 10.
   charge-limit rules are pure functions; test them without a device.
 - **Keep the platform layer thin.** Battery reads, notifications and the tray
   belong in the platform folder; decisions belong in the shared rules.
+- **A new feature updates the user-visible text in the same commit.** The About
+  screen on both platforms, the README feature list and the settings labels are
+  how anyone discovers what the app does. A feature nobody can find is a feature
+  nobody has.
 - **A functional change updates `CHANGELOG.md`.** Add a bullet under
   `## [Unreleased]` in the same commit. The release body comes from that
   section, and the release job fails if the tag has none.
