@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-11-22
+
+### Fixed (Windows)
+- **The plug is no longer cut when its state could not be recorded.** Sleep handling cut the charger whenever the feature was on, even when the relay state came back unknown and nothing could be put back on return. Between the thresholds the rules deliberately do nothing, so the charger would have stayed cut until the battery fell to the low level. The plug is now left alone in that case.
+- **A restore that fails is retried instead of forgotten.** The recorded state was cleared before the attempt, so one unanswered command at wake left the charger cut with no second chance. The record now survives a failure and is retried on each reading, up to six times, before the app says it gave up.
+
 ## [2.5.0] - 2026-11-22
 
 ### Added (Windows)

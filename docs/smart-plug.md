@@ -95,6 +95,14 @@ state, the plug would stay off until the battery fell to 15%.
 
 Two things worth knowing:
 
+- **The plug is only cut when there is a recorded state to put back.** If the
+  relay state cannot be read before the machine goes away, the plug is left
+  alone. Between the thresholds the rules do nothing, so a cut without a record
+  would never be undone.
+- **A restore that fails is retried.** If the plug does not answer on wake, the
+  app tries again on the next reading, up to six times, and then tells you it
+  gave up. It does not silently forget.
+
 - **A shutdown gives the app about five seconds.** The command is a single
   attempt with a three-second cap, not the usual retrying evaluation. If the
   plug does not answer in that window, the switch does not happen - the app logs

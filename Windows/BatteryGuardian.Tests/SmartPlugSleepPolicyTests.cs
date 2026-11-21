@@ -27,6 +27,21 @@ namespace BatteryGuardian.Tests
    Assert.Equal(expected, SmartPlugSleepPolicy.Remember(relay));
   }
 
+  [Theory]
+  [InlineData("On", true)]
+  [InlineData("Off", true)]
+  [InlineData("", false)]
+  [InlineData("   ", false)]
+  [InlineData("garbage", false)]
+  [InlineData(null, false)]
+  public void ThePlugIsOnlyCutWhenItCanBePutBack(string? remembered, bool expected)
+  {
+   // Cutting without a usable record is a one-way door: between the thresholds
+   // the rules do nothing, so nothing would ever restore the charger.
+   Assert.Equal(expected, SmartPlugSleepPolicy.CanRestore(remembered));
+  }
+
+
   [Fact]
   public void AnUnknownStateRemembersNothing()
   {
