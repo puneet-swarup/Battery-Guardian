@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.12] - 2026-11-22
+
+### Changed (repository)
+- **The screenshots are gone.** They showed a version without the smart plug, and a picture that is wrong is worse than no picture. The README section that displayed them, an unreferenced diagram, and the two places that described the folder as holding screenshots have all gone with them.
+- `CONTRIBUTING.md` now says what the rule is: no screenshots until someone can take them from the current release, and a picture that a change makes wrong is replaced in the same pull request.
+
 ## [2.5.11] - 2026-11-22
 
 ### Changed

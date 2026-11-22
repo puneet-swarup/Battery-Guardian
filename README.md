@@ -38,7 +38,7 @@ disturbing the others:
 Battery-Guardian/
 ├── Windows/          WPF app, tests, installer scripts
 ├── Android/          Kotlin app, tests, Gradle build
-├── docs/             ADRs, screenshots, the smart-plug reference
+├── docs/             ADRs, architecture, the smart-plug reference
 └── .github/          CI for both platforms
 ```
 
@@ -48,22 +48,6 @@ Both are built and tested automatically on every push and pull request by GitHub
 |---|---|---|
 | `build.yml` | Windows EXE (.NET 10) | [![Build and Publish EXE](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/build.yml/badge.svg)](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/build.yml) |
 | `android.yml` | Android APK (Kotlin) | [![Build and Publish Android APK](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/android.yml/badge.svg)](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/android.yml) |
-
----
-
-## 🪟 Windows App
-
-### 📸 Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/main1.png" alt="Battery Guardian main window" width="380"/>
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/settings1.png" alt="Battery Guardian settings window" width="380"/>
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/menu1.png" alt="Battery Guardian menu popup" width="180"/>
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/noti1.png" alt="Native Windows toast notification" width="280"/>
-</p>
 
 ---
 

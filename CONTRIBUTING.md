@@ -8,7 +8,7 @@ alert rules, so most changes have to be made twice or made in the shared logic.
 ```
 Windows/    WPF app (.NET 10), xUnit tests, installer scripts
 Android/    Kotlin app, JVM + Robolectric tests, Gradle build
-docs/       ADRs, screenshots, the smart-plug reference
+docs/       ADRs, architecture, the smart-plug reference
 ```
 
 The Tuya protocol is not in this repository. Both apps use the
@@ -48,6 +48,11 @@ commands, on JDK 17 and .NET 10.
   anywhere else, that is the bug - see [docs/architecture.md](docs/architecture.md).
 - **Keep the platform layer thin.** Battery reads, notifications and the tray
   belong in the platform folder; decisions belong in the shared rules.
+- **Screenshots are removed rather than left to age.** There are none in the
+  repository today: the ones that were here showed a version without the smart
+  plug, and a stale picture is worse than no picture. If you add one, it must
+  show the current release, and it must be replaced in the same pull request as
+  the change that makes it wrong.
 - **A new feature updates the user-visible text in the same commit.** The About
   screen on both platforms, the README feature list and the settings labels are
   how anyone discovers what the app does. A feature nobody can find is a feature
