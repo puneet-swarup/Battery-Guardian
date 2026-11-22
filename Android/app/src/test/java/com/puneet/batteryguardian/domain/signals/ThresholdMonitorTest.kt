@@ -48,9 +48,13 @@ class ThresholdMonitorTest {
     }
 
     @Test
-    fun aReadingTheCallerCannotUseIsUnknown() {
+    fun aReadingTheCallerCannotUseKeepsTheBand() {
+        // An unusable reading says nothing about the battery. Clearing the band
+        // here used to drop an active alert, which then fired again on the next
+        // good reading.
         val signal = ThresholdMonitor.evaluate(80, readingUsable = false, pair, BatteryBand.IN_BAND)
-        assertEquals(BatteryBand.UNKNOWN, signal.band)
+        assertEquals(BatteryBand.IN_BAND, signal.band)
+        assertFalse(signal.changed)
     }
 
     // ---- invalid pairs cannot produce a band ---------------------------
@@ -118,11 +122,10 @@ class ThresholdMonitorTest {
     }
 
     @Test
-    fun goingFromABandToUnknownIsAChange() {
+    fun anUnusableReadingDoesNotEndAHighBand() {
         val signal = ThresholdMonitor.evaluate(-1, true, pair, BatteryBand.HIGH)
-        assertEquals(BatteryBand.UNKNOWN, signal.band)
-        assertTrue(signal.changed)
-        assertFalse(signal.crossedHigh)
+        assertEquals(BatteryBand.HIGH, signal.band)
+        assertFalse(signal.changed)
     }
 
     @Test
@@ -178,6 +181,34 @@ class ThresholdMonitorTest {
     }
 
     @Test
+    fun leavingTheHighBandLandsWhereTheReadingBelongs() {
+        val rows = listOf(
+            5 to BatteryBand.LOW,       // straight from high to low
+            50 to BatteryBand.IN_BAND,
+            91 to BatteryBand.IN_BAND,
+            92 to BatteryBand.HIGH
+        )
+        for ((percent, expected) in rows) {
+            assertEquals("at $percent percent", expected,
+                ThresholdMonitor.evaluate(percent, true, pair, BatteryBand.HIGH).band)
+        }
+    }
+
+    @Test
+    fun leavingTheLowBandLandsWhereTheReadingBelongs() {
+        val rows = listOf(
+            96 to BatteryBand.HIGH,
+            50 to BatteryBand.IN_BAND,
+            19 to BatteryBand.IN_BAND,
+            18 to BatteryBand.LOW
+        )
+        for ((percent, expected) in rows) {
+            assertEquals("at $percent percent", expected,
+                ThresholdMonitor.evaluate(percent, true, pair, BatteryBand.LOW).band)
+        }
+    }
+
+    @Test
     fun anUnusableReadingDoesNotClearTheBand() {
         val signal = ThresholdMonitor.evaluate(-1, true, pair, BatteryBand.HIGH)
         assertEquals(BatteryBand.HIGH, signal.band)
@@ -192,10 +223,21 @@ class ThresholdMonitorTest {
 
     @Test
     fun theMarginHasItsOwnRules() {
-        assertTrue(ThresholdPair(95, 15, 3).validationError() == null)
-        assertTrue(ThresholdPair(95, 15, 0).validationError() == null)
+        assertNull(ThresholdPair(95, 15, 3).validationError())
+        assertNull(ThresholdPair(95, 15, 0).validationError())
+        // A margin larger than the gap is not rejected: it is clamped, so a tight
+        // pair still works - it just gets less room to wobble.
+        assertNull(ThresholdPair(95, 15, 40).validationError())
         assertTrue(ThresholdPair(95, 15, -1).validationError() != null)
-        assertTrue(ThresholdPair(95, 15, 40).validationError() != null)
+    }
+
+    @Test
+    fun aTightPairStillHasSomeHysteresis() {
+        // 95/90 is five points apart: the margin is clamped to two, so 93 still
+        // counts as high and 92 does not.
+        val tight = ThresholdPair(95, 90, 3)
+        assertEquals(BatteryBand.HIGH, ThresholdMonitor.evaluate(93, true, tight, BatteryBand.HIGH).band)
+        assertEquals(BatteryBand.IN_BAND, ThresholdMonitor.evaluate(92, true, tight, BatteryBand.HIGH).band)
     }
 
     // ---- the pair's own rules ------------------------------------------

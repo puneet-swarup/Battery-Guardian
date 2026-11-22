@@ -172,6 +172,28 @@ namespace BatteryGuardian.Tests
             }
         }
 
+        [Theory]
+        [InlineData(5, BatteryBand.Low)]      // straight from high to low
+        [InlineData(50, BatteryBand.InBand)]
+        [InlineData(91, BatteryBand.InBand)]
+        [InlineData(92, BatteryBand.High)]
+        public void LeavingTheHighBandLandsWhereTheReadingBelongs(int percent, BatteryBand expected)
+        {
+            var signal = ThresholdMonitor.Evaluate(percent, true, Pair, BatteryBand.High);
+            Assert.Equal(expected, signal.Band);
+        }
+
+        [Theory]
+        [InlineData(96, BatteryBand.High)]    // straight from low to high
+        [InlineData(50, BatteryBand.InBand)]
+        [InlineData(19, BatteryBand.InBand)]
+        [InlineData(18, BatteryBand.Low)]
+        public void LeavingTheLowBandLandsWhereTheReadingBelongs(int percent, BatteryBand expected)
+        {
+            var signal = ThresholdMonitor.Evaluate(percent, true, Pair, BatteryBand.Low);
+            Assert.Equal(expected, signal.Band);
+        }
+
         [Fact]
         public void AnUnusableReadingDoesNotClearTheBand()
         {

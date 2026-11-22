@@ -38,7 +38,6 @@ namespace BatteryGuardian.Signals
             if (Low >= High) return "Low threshold must be below high threshold.";
             if (High - Low < MinimumGap) return $"Thresholds must be at least {MinimumGap} points apart.";
             if (Margin < 0) return "The margin cannot be negative.";
-            if (Margin * 2 >= High - Low) return "The margin is too large for these levels.";
             return null;
         }
     }
@@ -92,16 +91,23 @@ namespace BatteryGuardian.Signals
                 return new ThresholdSignal(previous, previous, false);
 
             // Hysteresis: entering a band needs the level, leaving it needs the
-            // level plus the margin. A reading that wobbles across the level
-            // stays where it is instead of re-firing the alert or the relay.
+            // level plus the margin. The margin is clamped so a tight pair -
+            // 95/90 - still works; it simply gets less room to wobble.
+            int margin = Math.Min(pair.Margin, (pair.High - pair.Low - 1) / 2);
             BatteryBand band;
             switch (previous)
             {
                 case BatteryBand.High:
-                    band = batteryPercent >= pair.High - pair.Margin ? BatteryBand.High : BatteryBand.InBand;
+                    // Leaving High can land anywhere: a jump from 96 straight to
+                    // 5 is a Low reading, not a vague one in between.
+                    band = batteryPercent >= pair.High - margin ? BatteryBand.High :
+                           batteryPercent <= pair.Low ? BatteryBand.Low :
+                           BatteryBand.InBand;
                     break;
                 case BatteryBand.Low:
-                    band = batteryPercent <= pair.Low + pair.Margin ? BatteryBand.Low : BatteryBand.InBand;
+                    band = batteryPercent <= pair.Low + margin ? BatteryBand.Low :
+                           batteryPercent >= pair.High ? BatteryBand.High :
+                           BatteryBand.InBand;
                     break;
                 default:
                     band = batteryPercent >= pair.High ? BatteryBand.High :

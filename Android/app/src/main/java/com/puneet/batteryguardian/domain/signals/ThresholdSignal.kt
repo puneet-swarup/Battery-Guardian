@@ -24,7 +24,6 @@ data class ThresholdPair(
         if (low >= high) return "Low threshold must be below high threshold."
         if (high - low < MINIMUM_GAP) return "Thresholds must be at least $MINIMUM_GAP points apart."
         if (margin < 0) return "The margin cannot be negative."
-        if (margin * 2 >= high - low) return "The margin is too large for these levels."
         return null
     }
 
@@ -87,12 +86,22 @@ object ThresholdMonitor {
         }
 
         // Hysteresis: entering a band needs the level, leaving it needs the level
-        // plus the margin.
+        // plus the margin. The margin is clamped so that a tight pair - 95/90 -
+        // still works; it just gets less room to wobble.
+        val margin = minOf(pair.margin, (pair.high - pair.low - 1) / 2)
         val band = when (previous) {
-            BatteryBand.HIGH ->
-                if (batteryPercent >= pair.high - pair.margin) BatteryBand.HIGH else BatteryBand.IN_BAND
-            BatteryBand.LOW ->
-                if (batteryPercent <= pair.low + pair.margin) BatteryBand.LOW else BatteryBand.IN_BAND
+            // Leaving HIGH can land anywhere: a jump from 96 straight to 5 is a
+            // LOW reading, not a vague one in between.
+            BatteryBand.HIGH -> when {
+                batteryPercent >= pair.high - margin -> BatteryBand.HIGH
+                batteryPercent <= pair.low -> BatteryBand.LOW
+                else -> BatteryBand.IN_BAND
+            }
+            BatteryBand.LOW -> when {
+                batteryPercent <= pair.low + margin -> BatteryBand.LOW
+                batteryPercent >= pair.high -> BatteryBand.HIGH
+                else -> BatteryBand.IN_BAND
+            }
             else -> when {
                 batteryPercent >= pair.high -> BatteryBand.HIGH
                 batteryPercent <= pair.low -> BatteryBand.LOW

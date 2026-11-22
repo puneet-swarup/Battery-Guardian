@@ -181,13 +181,6 @@ namespace BatteryGuardian
             // and Low set at the top of this window, so there is one opinion
             // about the battery rather than two.
 
-            if (plugHigh - plugLow < SmartPlugConfig.MinimumGapPercent)
-            {
-                error = "Keep the two plug levels at least " + SmartPlugConfig.MinimumGapPercent +
-                        " points apart, otherwise the relay clicks on and off as the battery moves one percent at a time.";
-                return false;
-            }
-
             var store = new TuyaCredentialStore();
             string keyText = PlugKeyBox.Password.Trim();
 
