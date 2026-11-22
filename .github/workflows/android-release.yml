@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   build:
+    name: Android signed bundle
     runs-on: ubuntu-latest
 
     defaults:
@@ -57,6 +58,7 @@ jobs:
           path: Android/app/build/outputs/bundle/release/*.aab
 
   release:
+    name: Android attach bundle
     needs: build
     runs-on: ubuntu-latest
     permissions:

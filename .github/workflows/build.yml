@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   build:
+    name: Windows build
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v5
@@ -69,6 +70,7 @@ jobs:
         path: PublishOutput-FDD
 
   release:
+    name: Windows release
     needs: build
     runs-on: ubuntu-latest
     permissions:

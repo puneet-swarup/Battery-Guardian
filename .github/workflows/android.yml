@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   build:
+    name: Android build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -103,6 +104,7 @@ jobs:
         path: Android/app/build/outputs/apk/release/app-release.apk
 
   release:
+    name: Android release
     needs: build
     runs-on: ubuntu-latest
     permissions:
