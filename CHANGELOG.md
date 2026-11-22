@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.13] - 2026-11-22
+
+### Added (Windows)
+- **The plug now says what it decided.** A crossing that did nothing used to leave no evidence: the alert path logged into a log that is off, and the plug only wrote something when it threw. Every band change and every change in the plug's answer is now written unconditionally, so a failure can be read rather than guessed.
+
 ## [2.5.12] - 2026-11-22
 
 ### Changed (repository)

@@ -69,6 +69,7 @@ namespace BatteryGuardian
 
  // The band the levels were in last time. One pair, so one band.
  private BatteryBand _band = BatteryBand.Unknown;
+ private string _lastPlugLine = string.Empty;
  private bool _plugFailureNotified;
  private int _plugRestoreAttempts;
  private const int MaxPlugRestoreAttempts = 6;
@@ -873,6 +874,15 @@ namespace BatteryGuardian
                     _band);
                 _band = signal.Band;
 
+                // A band change is the interesting moment; without this line a
+                // crossing that does nothing leaves no evidence at all.
+                if (signal.Changed)
+                {
+                    DiagnosticLog.WriteAlways(
+                        $"BAND: {signal.Previous} -> {signal.Band} at {status.BatteryLifePercent}% " +
+                        $"(onAc={isOnAcPower})");
+                }
+
                 EvaluateAlerts(status.BatteryLifePercent, signal.Band, isOnAcPower);
                 _ = EvaluateSmartPlugAsync(signal.Band);
             }
@@ -1148,6 +1158,16 @@ namespace BatteryGuardian
    else if (status.LastError == SmartPlugError.None)
    {
     _plugFailureNotified = false;
+   }
+
+   // Log when the plug's answer changes, not every reading: a failure or a
+   // switch is what someone needs to see afterwards.
+   string line = $"PLUG: {status.LastError} | {status.Message} | relay={status.Relay} " +
+                 $"intent={controller.IntendedRelay} band={band}";
+   if (status.LastError != SmartPlugError.None || line != _lastPlugLine)
+   {
+    DiagnosticLog.WriteAlways(line);
+    _lastPlugLine = line;
    }
   }
   catch (Exception ex) { DiagnosticLog.WriteException("EvaluateSmartPlugAsync", ex); }
