@@ -54,7 +54,7 @@ class SmartPlugDecisionTest {
    assertEquals(
     "at $percent percent with the relay $relay",
     expected,
-    SmartPlugDecision.evaluate(percent, true, relay, cfg).action
+    SmartPlugDecision.evaluate(band(percent), relay, cfg).action
    )
   }
  }
