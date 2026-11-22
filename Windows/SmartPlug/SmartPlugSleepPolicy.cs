@@ -35,15 +35,6 @@ namespace BatteryGuardian.SmartPlug
         };
 
         /// <summary>
-        /// Whether the recorded state is good enough to cut the plug and rely on
-        /// putting it back. Cutting without a usable record is a one-way door:
-        /// between the thresholds the rules do nothing, so nothing would ever
-        /// restore the charger.
-        /// </summary>
-        public static bool CanRestore(string? remembered)
-            => remembered is RelayOn or RelayOff;
-
-        /// <summary>
         /// The relay state to restore, or null when nothing usable was recorded.
         /// </summary>
         public static bool? StateToRestore(string? remembered) => remembered switch

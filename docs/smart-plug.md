@@ -84,32 +84,27 @@ ID, device IP, Local Key (stored with DPAPI, CurrentUser scope), port (default
 ### Sleep, lid close and shutdown
 
 Windows turns a closed lid into a sleep or a shutdown, whichever your power plan
-says, and Battery Guardian listens for both. When the machine goes away it
-**cuts the plug** and remembers what the relay was doing. When it comes back -
-by waking, or by starting again after a shutdown - the plug is put back the way
-it was, and the threshold rules carry on from there.
+says, and Battery Guardian listens for both. When the machine goes away the plug
+is **switched off**, and what it was doing is remembered. When it comes back - by
+waking, or by starting again after a shutdown - the plug is put back the way it
+was, and the threshold rules carry on from there.
 
 Why remember rather than re-decide: a laptop that sleeps at 80% is between the
 thresholds, where the rules say leave the relay alone. Without the remembered
 state, the plug would stay off until the battery fell to 15%.
 
-Two things worth knowing:
+Three things worth knowing:
 
-- **The plug is only cut when there is a recorded state to put back.** If the
-  relay state cannot be read before the machine goes away, the plug is left
-  alone. Between the thresholds the rules do nothing, so a cut without a record
-  would never be undone.
-- **A restore that fails is retried.** If the plug does not answer on wake, the
-  app tries again on the next reading, up to six times, and then tells you it
-  gave up. It does not silently forget.
-
-- **A shutdown gives the app about five seconds.** The command is a single
-  attempt with a three-second cap, not the usual retrying evaluation. If the
-  plug does not answer in that window, the switch does not happen - the app logs
-  it, and the release note says so.
+- **Nothing waits for the plug.** The app neither reads the plug nor blocks on
+  the way out. The switch-off is handed to a background task and the handler
+  returns immediately, so suspend and shutdown are never delayed and the machine
+  is never held awake doing network work. If the machine sleeps before the
+  command lands, the plug stays on - accepted, and written to the log.
+- **A failed restore is retried.** If the plug does not answer on wake, the app
+  tries again on the next reading, up to six times, and then tells you it gave
+  up. It does not silently forget.
 - **A lid set to "do nothing" raises no event**, because the machine never goes
-  away. In that case the threshold rules still cut the charger at your high
-  level, as always.
+  away. The threshold rules still cut the charger at your high level, as always.
 
 Turn it off with the checkbox under Settings, Smart Plug.
 

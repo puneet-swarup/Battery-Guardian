@@ -1227,13 +1227,20 @@ namespace BatteryGuardian
 
  private void HandleGoingAway(string reason)
  {
+  // Nothing in here may wait. Holding the UI thread while a socket opens is what
+  // keeps the machine awake on the way to sleep, and an app that fights suspend
+  // is an app people uninstall. The switch still goes down - the command is
+  // handed to the thread pool and the handler returns at once.
   try
   {
+   SmartPlugController? controller = _smartPlugController;
+
    DiagnosticLog.WriteAlways(
     $"SLEEP: going away ({reason}). plugEnabled={_settings.SmartPlugEnabled} " +
     $"switchOffOnSleep={_settings.SmartPlugOffWhenSleeping} " +
-    $"controller={(_smartPlugController == null ? "none" : "present")} " +
-    $"relay={(_smartPlugController == null ? "?" : _smartPlugController.Status.Relay.ToString())}");
+    $"controller={(controller == null ? "none" : "present")} " +
+    $"lastSeen={(controller == null ? "?" : controller.Status.Relay.ToString())} " +
+    $"intent={(controller == null ? "?" : controller.IntendedRelay.ToString())}");
 
    if (!SmartPlugSleepPolicy.ShouldSwitchOff(_settings.SmartPlugEnabled, _settings.SmartPlugOffWhenSleeping))
    {
@@ -1241,40 +1248,39 @@ namespace BatteryGuardian
     return;
    }
 
-   SmartPlugController? controller = _smartPlugController;
    if (controller == null)
    {
     DiagnosticLog.WriteAlways("SLEEP: not cutting - no controller (plug not configured).");
     return;
    }
 
-   // Read the plug now instead of trusting the cached status, which can be
-   // hours old by the time the lid closes. If the read fails, fall back to the
-   // last thing this app told the plug to do - the intent - because that is
-   // still true even when the plug will not answer.
-   SmartPlugStatus fresh = controller.ReadStatusAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
-   RelayState known = fresh.Connected ? fresh.Relay : controller.IntendedRelay;
+   // What we knew a moment ago: no network read here. The last thing the plug
+   // said, or failing that the last thing we asked it to do.
+   RelayState known = controller.Status.Relay != RelayState.Unknown
+    ? controller.Status.Relay
+    : controller.IntendedRelay;
 
-   DiagnosticLog.WriteAlways(
-    $"SLEEP: state read={(fresh.Connected ? fresh.Relay.ToString() : "failed: " + fresh.Message)} " +
-    $"intent={controller.IntendedRelay} using={known}");
-
-   string remembered = SmartPlugSleepPolicy.Remember(known);
-
-   // Only cut the plug if there is something to put back. Cutting without a
-   // record is a one-way door: between the thresholds the rules do nothing, so
-   // nothing would ever restore the charger.
-   if (!SmartPlugSleepPolicy.CanRestore(remembered))
-   {
-    DiagnosticLog.WriteAlways($"SLEEP: not cutting - relay state unusable ('{remembered}'), nothing to restore.");
-    return;
-   }
-
-   _settings.SmartPlugStateBeforeSleep = remembered;
+   // Record it even when it is unknown: the switch still goes down, and the low
+   // threshold brings it back if nothing else does.
+   _settings.SmartPlugStateBeforeSleep = SmartPlugSleepPolicy.Remember(known);
    SaveSettings(_settings);
 
-   SmartPlugStatus status = controller.ApplyNowAsync(false, TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
-   DiagnosticLog.WriteAlways($"SLEEP: cut attempted, error={status.LastError} message='{status.Message}', remembered '{remembered}'.");
+   DiagnosticLog.WriteAlways($"SLEEP: cutting from '{known}', remembered '{_settings.SmartPlugStateBeforeSleep}'.");
+
+   // Fire and forget. If the machine suspends before this completes, the plug
+   // stays on - accepted, and logged on the way back in.
+   _ = Task.Run(async () =>
+   {
+    try
+    {
+     SmartPlugStatus status = await controller.ApplyNowAsync(false, TimeSpan.FromSeconds(2));
+     DiagnosticLog.WriteAlways($"SLEEP: cut finished, error={status.LastError} message='{status.Message}'.");
+    }
+    catch (Exception ex)
+    {
+     DiagnosticLog.WriteAlways($"SLEEP: cut failed - {ex.GetType().Name}: {ex.Message}");
+    }
+   });
   }
   catch (Exception ex) { DiagnosticLog.WriteException("HandleGoingAway", ex); }
  }

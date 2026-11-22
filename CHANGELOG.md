@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.7] - 2026-11-22
+
+### Fixed (Windows)
+- **Sleep no longer delays the machine.** The switch-off blocked the UI thread for up to three seconds while it opened a socket and read the plug first - which is exactly what holds a laptop awake on the way to suspend and drains it. The read is gone, the command is handed to a background task, and the handler returns at once. The plug still goes off; the app just stops standing in the door.
+- **The socket is kept warm.** The heartbeat was disabled, so every idle period ended in a half-open connection and the next command paid for a fresh handshake - slow enough to miss the few seconds a suspend allows, and the likely reason the charger did not come back on at the low threshold either. The heartbeat is on.
+- The plug is now switched off on sleep regardless of whether its state could be read; the remembered state is best effort, and the low threshold brings the charger back if nothing else does.
+
 ## [2.5.6] - 2026-11-22
 
 ### Fixed (Windows)

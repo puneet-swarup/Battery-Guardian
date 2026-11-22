@@ -47,9 +47,12 @@ namespace BatteryGuardian.SmartPlug
                 Version = TuyaProtocolVersion.V35,
                 ConnectTimeout = TimeSpan.FromMilliseconds(timeoutMs),
                 CommandTimeout = TimeSpan.FromMilliseconds(timeoutMs),
-                // The plug is polled on a timer; its own heartbeat is redundant
-                // and the controller already notices a dropped connection.
-                EnableHeartbeat = false,
+                // Keep the socket warm. Without the heartbeat an idle plug ends
+                // up with a half-open connection, so the next command pays for a
+                // fresh handshake - slow enough to miss the few seconds a suspend
+                // allows, and unreliable enough to be the reason the charger did
+                // not come back on at the low threshold.
+                EnableHeartbeat = true,
             };
         }
 
