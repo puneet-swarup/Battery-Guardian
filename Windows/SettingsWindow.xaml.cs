@@ -16,8 +16,6 @@ namespace BatteryGuardian
             public string Host = string.Empty;
             public int Port = 6668;
             public int RelayDp = 1;
-            public int High = 95;
-            public int Low = 15;
             public byte[]? Key;
         }
 
@@ -179,25 +177,9 @@ namespace BatteryGuardian
             }
             input.RelayDp = relayDp;
 
-            if (!int.TryParse(PlugHighBox.Text, out int plugHigh) || plugHigh < 1 || plugHigh > 100)
-            {
-                error = "The plug switch-off level must be between 1 and 100 percent.";
-                return false;
-            }
-            input.High = plugHigh;
-
-            if (!int.TryParse(PlugLowBox.Text, out int plugLow) || plugLow < 0 || plugLow > 99)
-            {
-                error = "The plug switch-on level must be between 0 and 99 percent.";
-                return false;
-            }
-            input.Low = plugLow;
-
-            if (plugLow >= plugHigh)
-            {
-                error = "The plug switch-on level must be below the switch-off level.";
-                return false;
-            }
+            // The levels are not part of the plug any more: it follows the High
+            // and Low set at the top of this window, so there is one opinion
+            // about the battery rather than two.
 
             if (plugHigh - plugLow < SmartPlugConfig.MinimumGapPercent)
             {
