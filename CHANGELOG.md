@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.4] - 2026-11-22
+
+### Fixed (Windows)
+- **The sleep path was invisible, so it could not be diagnosed.** Every line it wrote went through the diagnostic log, which is off by default - so a plug that stayed on left no trace of why: whether the event fired, whether the feature was on, whether the relay state was readable, or whether the command was sent at all. The sleep path now always writes a handful of lines, whatever the setting says, and every branch says what it decided.
+- **New tray item: Test Sleep Handling.** It runs the same code without closing the lid - cut the plug, wait three seconds, put it back - and names the log file. The lid test no longer has to be the only way to find out.
+
 ## [2.5.3] - 2026-11-22
 
 ### Fixed (smart plug)

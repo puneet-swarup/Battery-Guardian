@@ -168,6 +168,11 @@ namespace BatteryGuardian
             testLowItem.Click += (s, e) => TriggerTestAlert(high: false);
             contextMenu.Items.Add(testLowItem);
 
+            var testSleepItem = new System.Windows.Controls.MenuItem { Header = "Test Sleep Handling" };
+            testSleepItem.ToolTip = "Cuts the plug, waits three seconds, puts it back, and logs what happened.";
+            testSleepItem.Click += async (s, e) => await TestSleepHandlingAsync();
+            contextMenu.Items.Add(testSleepItem);
+
             contextMenu.Items.Add(new System.Windows.Controls.Separator());
 
             var diagItem = new System.Windows.Controls.MenuItem { Header = "Open Diagnostic Log" };
@@ -1132,11 +1137,16 @@ namespace BatteryGuardian
 
  private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
  {
-  if (e.Mode == PowerModes.Suspend) HandleGoingAway();
+  DiagnosticLog.WriteAlways($"SLEEP: PowerModeChanged {e.Mode}");
+  if (e.Mode == PowerModes.Suspend) HandleGoingAway("suspend");
   else if (e.Mode == PowerModes.Resume) _ = RestoreAfterSleepAsync();
  }
 
- private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e) => HandleGoingAway();
+ private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
+ {
+  DiagnosticLog.WriteAlways("SLEEP: SessionEnding");
+  HandleGoingAway("session end");
+ }
 
  /// <summary>
  /// Records the relay state and cuts the plug. A shutdown gives the app a few
@@ -1148,12 +1158,44 @@ namespace BatteryGuardian
  /// still knows what the plug was meant to be, and the user is told if the
  /// switch did not happen.
  /// </remarks>
- private void HandleGoingAway()
+ /// <summary>
+ /// Runs the sleep path on demand so it can be checked without closing the lid:
+ /// cut the plug, wait, put it back, and report what happened.
+ /// </summary>
+ private async Task TestSleepHandlingAsync()
  {
   try
   {
+   DiagnosticLog.WriteAlways("SLEEP TEST: starting.");
+   HandleGoingAway("test");
+   await Task.Delay(TimeSpan.FromSeconds(3));
+   await RestoreAfterSleepAsync();
+
+   ShowToastNotification("Battery Guardian",
+    $"Sleep handling tested. Log: {DiagnosticLog.GetLogPath()}");
+   DiagnosticLog.WriteAlways("SLEEP TEST: finished.");
+  }
+  catch (Exception ex)
+  {
+   DiagnosticLog.WriteAlways($"SLEEP TEST: failed - {ex.GetType().Name}: {ex.Message}");
+  }
+ }
+
+ private void HandleGoingAway(string reason)
+ {
+  try
+  {
+   DiagnosticLog.WriteAlways(
+    $"SLEEP: going away ({reason}). plugEnabled={_settings.SmartPlugEnabled} " +
+    $"switchOffOnSleep={_settings.SmartPlugOffWhenSleeping} " +
+    $"controller={(_smartPlugController == null ? "none" : "present")} " +
+    $"relay={(_smartPlugController == null ? "?" : _smartPlugController.Status.Relay.ToString())}");
+
    if (!SmartPlugSleepPolicy.ShouldSwitchOff(_settings.SmartPlugEnabled, _settings.SmartPlugOffWhenSleeping))
+   {
+    DiagnosticLog.WriteAlways("SLEEP: not cutting - feature or plug control is off.");
     return;
+   }
 
    SmartPlugController? controller = _smartPlugController;
    string remembered = controller == null
@@ -1165,17 +1207,21 @@ namespace BatteryGuardian
    // nothing would ever restore the charger.
    if (!SmartPlugSleepPolicy.CanRestore(remembered))
    {
-    DiagnosticLog.Write("Going away: plug state unknown, left untouched so it can be recovered.");
+    DiagnosticLog.WriteAlways($"SLEEP: not cutting - relay state unusable ('{remembered}'), nothing to restore.");
     return;
    }
 
    _settings.SmartPlugStateBeforeSleep = remembered;
    SaveSettings(_settings);
 
-   if (controller == null) return;
+   if (controller == null)
+   {
+    DiagnosticLog.WriteAlways("SLEEP: not cutting - no controller (plug not configured).");
+    return;
+   }
 
    SmartPlugStatus status = controller.ApplyNowAsync(false, TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
-   DiagnosticLog.Write($"Going away: plug off ({status.Message}), remembered '{remembered}'.");
+   DiagnosticLog.WriteAlways($"SLEEP: cut attempted, error={status.LastError} message='{status.Message}', remembered '{remembered}'.");
   }
   catch (Exception ex) { DiagnosticLog.WriteException("HandleGoingAway", ex); }
  }
