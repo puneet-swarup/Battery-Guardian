@@ -1,5 +1,7 @@
 package com.puneet.batteryguardian.core
 
+import com.puneet.batteryguardian.domain.signals.BatteryBand
+
 /**
  * Pure logic for deciding whether a High or Low battery alert should currently
  * be active. Deliberately has no dependency on Android APIs, Context, timers or
@@ -13,21 +15,24 @@ object AlertEvaluator {
     const val DEFAULT_LOW_THRESHOLD = 15
 
     /**
-     * Evaluates the current battery state and returns what alerts should be active.
+     * Decides what alerts should be active for a reading.
      *
-     * @param batteryPercent Current battery percentage (0-100).
+     * The comparison with the thresholds is not done here: it happens once, in
+     * [com.puneet.batteryguardian.domain.signals.ThresholdMonitor], and arrives
+     * as a band. This object only knows what an alert means - a high alert needs
+     * the charger plugged in, a low alert needs it out.
+     *
+     * @param batteryPercent Current battery percentage, for the message.
+     * @param band Where that percentage sits against the alert levels.
      * @param isOnAcPower True if the charger is physically plugged in.
-     * @param highThreshold Configured high threshold (e.g. 95).
-     * @param lowThreshold Configured low threshold (e.g. 15).
      */
     fun evaluate(
         batteryPercent: Int,
-        isOnAcPower: Boolean,
-        highThreshold: Int = DEFAULT_HIGH_THRESHOLD,
-        lowThreshold: Int = DEFAULT_LOW_THRESHOLD
+        band: BatteryBand,
+        isOnAcPower: Boolean
     ): AlertState {
-        val highCondition = isOnAcPower && batteryPercent >= highThreshold
-        val lowCondition = !isOnAcPower && batteryPercent <= lowThreshold
+        val highCondition = isOnAcPower && band == BatteryBand.HIGH
+        val lowCondition = !isOnAcPower && band == BatteryBand.LOW
 
         return AlertState(
             highAlertShouldBeActive = highCondition,

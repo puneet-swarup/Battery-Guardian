@@ -3,6 +3,9 @@ package com.puneet.batteryguardian.service
 import android.content.Context
 import com.puneet.batteryguardian.battery.BatterySnapshot
 import com.puneet.batteryguardian.core.AlertEvaluator
+import com.puneet.batteryguardian.domain.signals.BatteryBand
+import com.puneet.batteryguardian.domain.signals.ThresholdMonitor
+import com.puneet.batteryguardian.domain.signals.ThresholdPair
 import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.notify.AlertSink
@@ -37,6 +40,9 @@ class AlertCoordinator(
     private var lastAlertAtMillis: Long = 0L
     private var currentMessage: String = ""
 
+    /** The band the alert levels were in last time, so a crossing can be seen. */
+    private var lastBand: BatteryBand = BatteryBand.UNKNOWN
+
     /**
      * Evaluates a snapshot and, when appropriate, fires an alert. Returns the
      * resulting [EvaluationResult] so callers (e.g. the service) can update the
@@ -45,11 +51,21 @@ class AlertCoordinator(
     fun onBatterySnapshot(snapshot: BatterySnapshot): EvaluationResult {
         val settings = settingsRepository.load()
 
+        // One reading, classified once. The comparison with the levels lives in
+        // ThresholdMonitor and nowhere else; this coordinator only knows what an
+        // alert means.
+        val signal = ThresholdMonitor.evaluate(
+            batteryPercent = snapshot.percent,
+            readingUsable = snapshot.percent >= 0,
+            pair = ThresholdPair(settings.highBatteryThreshold, settings.lowBatteryThreshold),
+            previous = lastBand
+        )
+        lastBand = signal.band
+
         val state = AlertEvaluator.evaluate(
             batteryPercent = snapshot.percent,
-            isOnAcPower = snapshot.isOnAcPower,
-            highThreshold = settings.highBatteryThreshold,
-            lowThreshold = settings.lowBatteryThreshold
+            band = signal.band,
+            isOnAcPower = snapshot.isOnAcPower
         )
 
         val wasHigh = highAlertActive

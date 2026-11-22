@@ -2,6 +2,9 @@ package com.puneet.batteryguardian.domain.smartplug
 
 import com.puneet.batteryguardian.data.tuya.RelayState
 import com.puneet.batteryguardian.data.tuya.SmartPlug
+import com.puneet.batteryguardian.domain.signals.BatteryBand
+import com.puneet.batteryguardian.domain.signals.ThresholdMonitor
+import com.puneet.batteryguardian.domain.signals.ThresholdPair
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,6 +26,9 @@ class SmartPlugControllerTest {
   host = "1.2.3.4"
  )
 
+ private fun band(percent: Int) =
+  ThresholdMonitor.evaluate(percent, true, ThresholdPair(95, 15), BatteryBand.UNKNOWN).band
+
  @Test
  fun aSlowEvaluationIsSkippedNotQueued() {
   val plug = BlockingPlug()
@@ -30,11 +36,11 @@ class SmartPlugControllerTest {
   val pool = Executors.newSingleThreadExecutor()
 
   try {
-   val first = pool.submit { controller.evaluate(50, true) }
+   val first = pool.submit { controller.evaluate(band(50)) }
    assertTrue("the first evaluation never reached the plug", plug.entered.await(5, TimeUnit.SECONDS))
 
    val started = System.currentTimeMillis()
-   controller.evaluate(50, true)
+   controller.evaluate(band(50))
    val elapsed = System.currentTimeMillis() - started
 
    assertTrue("the second reading waited instead of being skipped: $elapsed ms", elapsed < 2000)
@@ -53,7 +59,7 @@ class SmartPlugControllerTest {
   val plug = UnreadablePlug()
   val controller = SmartPlugController(plug, cfg)
 
-  controller.evaluate(10, true)
+  controller.evaluate(band(10))
 
   assertTrue("the plug was never told to switch on", plug.turnedOn)
  }
@@ -63,7 +69,7 @@ class SmartPlugControllerTest {
   val plug = UnreadablePlug()
   val controller = SmartPlugController(plug, cfg)
 
-  controller.evaluate(50, true)
+  controller.evaluate(band(50))
 
   assertFalse(plug.turnedOn)
   assertTrue(controller.lastError != null)

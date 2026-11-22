@@ -19,6 +19,9 @@ import com.puneet.batteryguardian.data.NotificationDndDetector
 import com.puneet.batteryguardian.data.SettingsQuietHoursProvider
 import com.puneet.batteryguardian.notify.NotificationChannels
 import com.puneet.batteryguardian.widget.BatteryWidgetProvider
+import com.puneet.batteryguardian.domain.signals.BatteryBand
+import com.puneet.batteryguardian.domain.signals.ThresholdMonitor
+import com.puneet.batteryguardian.domain.signals.ThresholdPair
 import com.puneet.batteryguardian.domain.smartplug.SmartPlugFailurePolicy
 import com.puneet.batteryguardian.domain.smartplug.SmartPlugManager
 import com.puneet.batteryguardian.update.UpdateCheckPolicy
@@ -51,6 +54,10 @@ class BatteryMonitorService : Service() {
 
  @Volatile
  private var plugFailureNotified = false
+
+ /** The band the plug levels were in last time. */
+ @Volatile
+ private var plugBand: BatteryBand = BatteryBand.UNKNOWN
     private var lastHistoryWriteMillis: Long = 0L
 
     private var receiver: BatteryStateReceiver? = null
@@ -155,7 +162,7 @@ class BatteryMonitorService : Service() {
                 val result = coordinator.onBatterySnapshot(snapshot)
                 OngoingNotification.update(this, result.snapshot)
                 BatteryWidgetProvider.refreshAll(this)
- evaluateSmartPlug(snapshot.percent, snapshot.percent >= 0)
+ evaluateSmartPlug(snapshot)
  maybeCheckForUpdates()
             }
 
@@ -315,9 +322,19 @@ class BatteryMonitorService : Service() {
      * on switching the charger. Checking the snooze here would quietly turn it
      * into a way to disable the protection.
      */
-    private fun evaluateSmartPlug(percent: Int, known: Boolean) {
+    private fun evaluateSmartPlug(snapshot: com.puneet.batteryguardian.battery.BatterySnapshot) {
  val settings = settingsRepository.load()
  val controller = smartPlugManager.controllerFor(settings) ?: return
+
+ // One reading, classified once, against the plug's own levels.
+ val signal = ThresholdMonitor.evaluate(
+  batteryPercent = snapshot.percent,
+  readingUsable = snapshot.percent >= 0,
+  pair = ThresholdPair(settings.smartPlugHighThreshold, settings.smartPlugLowThreshold),
+  previous = plugBand
+ )
+ plugBand = signal.band
+ val band = signal.band
 
  // One evaluation at a time, and drop the rest. Spawning a thread per reading
  // let them pile up behind a plug that was slow or unreachable, so the app
@@ -326,7 +343,7 @@ class BatteryMonitorService : Service() {
 
  thread(name = "smartplug-eval") {
   try {
-   controller.evaluate(percent, known)
+   controller.evaluate(band)
    reportPlugFailure(controller.lastError, settings)
   } catch (t: Throwable) {
    log.writeException("evaluateSmartPlug", t)

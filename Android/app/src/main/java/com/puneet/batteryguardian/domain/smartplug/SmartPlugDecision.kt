@@ -1,6 +1,7 @@
 package com.puneet.batteryguardian.domain.smartplug
 
 import com.puneet.batteryguardian.data.tuya.RelayState
+import com.puneet.batteryguardian.domain.signals.BatteryBand
 
 data class SmartPlugConfig(
  val enabled: Boolean = false,
@@ -37,18 +38,25 @@ object SmartPlugDecision {
  enum class Action { NONE, TURN_ON, TURN_OFF }
  data class Decision(val action: Action, val reason: String)
 
- fun evaluate(batteryPercent: Int, batteryKnown: Boolean, relay: RelayState, config: SmartPlugConfig): Decision {
+ /**
+  * Decides what to do with the relay, given where the reading sits.
+  *
+  * Level-based, not edge-based, on purpose: the plug must end up correct even if
+  * the app missed the moment a level was crossed - while it was starting, or
+  * asleep. An alert wants the edge; a switch wants the level.
+  */
+ fun evaluate(band: BatteryBand, relay: RelayState, config: SmartPlugConfig): Decision {
  if (!config.enabled) return Decision(Action.NONE, "Disabled.")
- if (!batteryKnown || batteryPercent < 0 || batteryPercent > 100) return Decision(Action.NONE, "Battery unknown.")
+ if (band == BatteryBand.UNKNOWN) return Decision(Action.NONE, "Battery unknown.")
  // The relay state decides whether a command is needed, never whether one is
  // allowed. Requiring a successful read deadlocked the feature: when the plug
  // did not answer, the app did nothing, so turning the charger back on had to
  // be done by hand.
- if (batteryPercent >= config.highThreshold) {
+ if (band == BatteryBand.HIGH) {
   return if (relay == RelayState.OFF) Decision(Action.NONE, "Battery >= high; plug already OFF.")
   else Decision(Action.TURN_OFF, "Battery >= high; turn OFF.")
  }
- if (batteryPercent <= config.lowThreshold) {
+ if (band == BatteryBand.LOW) {
   return if (relay == RelayState.ON) Decision(Action.NONE, "Battery <= low; plug already ON.")
   else Decision(Action.TURN_ON, "Battery <= low; turn ON.")
  }

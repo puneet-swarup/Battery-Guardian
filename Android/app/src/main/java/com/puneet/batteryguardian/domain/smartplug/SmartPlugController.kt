@@ -2,6 +2,7 @@ package com.puneet.batteryguardian.domain.smartplug
 
 import com.puneet.batteryguardian.data.tuya.RelayState
 import com.puneet.batteryguardian.data.tuya.SmartPlug
+import com.puneet.batteryguardian.domain.signals.BatteryBand
 import java.util.concurrent.locks.ReentrantLock
 
 class SmartPlugController(
@@ -22,7 +23,7 @@ class SmartPlugController(
 
  private val lock = ReentrantLock()
 
- fun evaluate(batteryPercent: Int, batteryKnown: Boolean): RelayState {
+ fun evaluate(band: BatteryBand): RelayState {
   if (!config.enabled) return lastRelay
 
   // Skip, never queue. A reading that waits behind a slow call is stale by the
@@ -49,7 +50,7 @@ class SmartPlugController(
    }
    lastRelay = relay
 
-   val decision = SmartPlugDecision.evaluate(batteryPercent, batteryKnown, relay, config)
+   val decision = SmartPlugDecision.evaluate(band, relay, config)
    when (decision.action) {
     SmartPlugDecision.Action.TURN_OFF -> { plug.turnOff(); lastRelay = RelayState.OFF }
     SmartPlugDecision.Action.TURN_ON -> { plug.turnOn(); lastRelay = RelayState.ON }
