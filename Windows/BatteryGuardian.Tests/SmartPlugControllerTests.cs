@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using BatteryGuardian.Signals;
 using BatteryGuardian.SmartPlug;
 using Xunit;
 
@@ -15,6 +16,10 @@ namespace BatteryGuardian.Tests
  /// </summary>
  public class SmartPlugControllerTests
  {
+  /// <summary>The band the monitor would produce for this reading.</summary>
+  private static BatteryBand Band(int percent) =>
+   ThresholdMonitor.Evaluate(percent, true, new ThresholdPair(95, 15), BatteryBand.Unknown).Band;
+
   private static readonly SmartPlugConfig Cfg = new(true, 95, 15, "dev", "1.2.3.4", 6668, 1, 3);
 
   [Fact]
@@ -23,11 +28,11 @@ namespace BatteryGuardian.Tests
    var plug = new BlockingPlug();
    using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
 
-   Task<SmartPlugStatus> first = controller.EvaluateAsync(50);
+   Task<SmartPlugStatus> first = controller.EvaluateAsync(Band(50));
    Assert.True(plug.Entered.Wait(TimeSpan.FromSeconds(5)), "the first evaluation never reached the plug");
 
    var clock = Stopwatch.StartNew();
-   SmartPlugStatus second = await controller.EvaluateAsync(50);
+   SmartPlugStatus second = await controller.EvaluateAsync(Band(50));
    clock.Stop();
 
    Assert.NotNull(second.Message);
@@ -45,7 +50,7 @@ namespace BatteryGuardian.Tests
    using var controller = new SmartPlugController(new ThrowingPlug(), Cfg, new[] { 0, 0 });
 
    var clock = Stopwatch.StartNew();
-   SmartPlugStatus status = await controller.EvaluateAsync(96);
+   SmartPlugStatus status = await controller.EvaluateAsync(Band(96));
    clock.Stop();
 
    Assert.Equal(SmartPlugError.Unreachable, status.LastError);
@@ -60,11 +65,11 @@ namespace BatteryGuardian.Tests
    // First reading: the plug cannot be read, so the state is unknown - but the
    // command still goes out and the intent is recorded. That is the whole point
    // of not letting a failed read stop the switch.
-   SmartPlugStatus first = await controller.EvaluateAsync(96);
+   SmartPlugStatus first = await controller.EvaluateAsync(Band(96));
    Assert.Equal(RelayState.Off, controller.IntendedRelay);
 
    // Second reading: the plug answers again, and the observation is recorded.
-   SmartPlugStatus second = await controller.EvaluateAsync(96);
+   SmartPlugStatus second = await controller.EvaluateAsync(Band(96));
    Assert.Equal(SmartPlugError.None, second.LastError);
    Assert.NotEqual(RelayState.Unknown, second.Relay);
   }
@@ -78,7 +83,7 @@ namespace BatteryGuardian.Tests
    var plug = new UnreadablePlug();
    using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
 
-   SmartPlugStatus status = await controller.EvaluateAsync(10);
+   SmartPlugStatus status = await controller.EvaluateAsync(Band(10));
 
    Assert.True(plug.TurnedOn, "the plug was never told to switch on");
    Assert.Equal(RelayState.On, controller.IntendedRelay);
@@ -91,7 +96,7 @@ namespace BatteryGuardian.Tests
    var plug = new UnreadablePlug();
    using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
 
-   SmartPlugStatus status = await controller.EvaluateAsync(96);
+   SmartPlugStatus status = await controller.EvaluateAsync(Band(96));
 
    Assert.True(plug.TurnedOff, "the plug was never told to switch off");
    Assert.Equal(RelayState.Off, controller.IntendedRelay);
@@ -107,7 +112,7 @@ namespace BatteryGuardian.Tests
    var plug = new UnreadablePlug();
    using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
 
-   SmartPlugStatus status = await controller.EvaluateAsync(50);
+   SmartPlugStatus status = await controller.EvaluateAsync(Band(50));
 
    Assert.Equal(SmartPlugError.Unreachable, status.LastError);
    Assert.False(plug.TurnedOn || plug.TurnedOff);
@@ -162,7 +167,7 @@ namespace BatteryGuardian.Tests
    var plug = new BlockingPlug();
    using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
 
-   Task<SmartPlugStatus> busy = controller.EvaluateAsync(50);
+   Task<SmartPlugStatus> busy = controller.EvaluateAsync(Band(50));
    Assert.True(plug.Entered.Wait(TimeSpan.FromSeconds(5)));
 
    var clock = Stopwatch.StartNew();

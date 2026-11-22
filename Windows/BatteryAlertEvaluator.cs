@@ -1,4 +1,5 @@
 ﻿using System;
+using BatteryGuardian.Signals;
 
 namespace BatteryGuardian
 {
@@ -21,20 +22,21 @@ namespace BatteryGuardian
     public class BatteryAlertEvaluator
     {
         /// <summary>
-        /// Evaluates the current battery state and returns what alerts should be active.
+        /// Decides what alerts should be active for a reading.
         /// </summary>
-        /// <param name="batteryPercent">Current battery percentage (0-100).</param>
+        /// <remarks>
+        /// The comparison with the thresholds is not done here: it happens once,
+        /// in <see cref="ThresholdMonitor"/>, and arrives as a band. This class
+        /// only knows what an alert means - a high alert needs the charger
+        /// plugged in, a low alert needs it out.
+        /// </remarks>
+        /// <param name="batteryPercent">Current battery percentage, for the message.</param>
+        /// <param name="band">Where that percentage sits against the alert levels.</param>
         /// <param name="isOnAcPower">True if the charger is physically plugged in.</param>
-        /// <param name="highThreshold">Configured high threshold (e.g., 95).</param>
-        /// <param name="lowThreshold">Configured low threshold (e.g., 15).</param>
-        public AlertState Evaluate(
-            int batteryPercent,
-            bool isOnAcPower,
-            int highThreshold,
-            int lowThreshold)
+        public AlertState Evaluate(int batteryPercent, BatteryBand band, bool isOnAcPower)
         {
-            bool highCondition = isOnAcPower && batteryPercent >= highThreshold;
-            bool lowCondition = !isOnAcPower && batteryPercent <= lowThreshold;
+            bool highCondition = isOnAcPower && band == BatteryBand.High;
+            bool lowCondition = !isOnAcPower && band == BatteryBand.Low;
 
             var state = new AlertState
             {

@@ -1,3 +1,4 @@
+using BatteryGuardian.Signals;
 ﻿using Xunit;
 
 namespace BatteryGuardian.Tests
@@ -8,6 +9,10 @@ namespace BatteryGuardian.Tests
     /// </summary>
     public class BatteryAlertEvaluatorTests
     {
+        /// <summary>The band the monitor would produce for this reading.</summary>
+        private static BatteryBand Band(int percent, int high = 95, int low = 15) =>
+            ThresholdMonitor.Evaluate(percent, true, new ThresholdPair(high, low), BatteryBand.Unknown).Band;
+
         private readonly BatteryAlertEvaluator _evaluator = new();
 
         // ============================================================
@@ -17,7 +22,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_OnAcPower_AtExactHighThreshold_TriggersHighAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 95, isOnAcPower: true, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(95, Band(95, 95, 15), true);
 
             Assert.True(state.HighAlertShouldBeActive);
             Assert.False(state.LowAlertShouldBeActive);
@@ -26,7 +31,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_OnAcPower_AboveHighThreshold_TriggersHighAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 100, isOnAcPower: true, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(100, Band(100, 95, 15), true);
 
             Assert.True(state.HighAlertShouldBeActive);
         }
@@ -34,7 +39,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_OnAcPower_BelowHighThreshold_DoesNotTriggerHighAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 80, isOnAcPower: true, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(80, Band(80, 95, 15), true);
 
             Assert.False(state.HighAlertShouldBeActive);
         }
@@ -42,7 +47,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_NotOnAcPower_AboveHighThreshold_DoesNotTriggerHighAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 99, isOnAcPower: false, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(99, Band(99, 95, 15), false);
 
             Assert.False(state.HighAlertShouldBeActive);
         }
@@ -50,7 +55,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_HighAlertMessage_ContainsBatteryPercentage()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 97, isOnAcPower: true, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(97, Band(97, 95, 15), true);
 
             Assert.Contains("97", state.HighAlertMessage);
         }
@@ -62,7 +67,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_NotOnAcPower_AtExactLowThreshold_TriggersLowAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 15, isOnAcPower: false, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(15, Band(15, 95, 15), false);
 
             Assert.True(state.LowAlertShouldBeActive);
             Assert.False(state.HighAlertShouldBeActive);
@@ -71,7 +76,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_NotOnAcPower_BelowLowThreshold_TriggersLowAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 5, isOnAcPower: false, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(5, Band(5, 95, 15), false);
 
             Assert.True(state.LowAlertShouldBeActive);
         }
@@ -79,7 +84,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_NotOnAcPower_AboveLowThreshold_DoesNotTriggerLowAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 50, isOnAcPower: false, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(50, Band(50, 95, 15), false);
 
             Assert.False(state.LowAlertShouldBeActive);
         }
@@ -87,7 +92,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_OnAcPower_BelowLowThreshold_DoesNotTriggerLowAlert()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 10, isOnAcPower: true, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(10, Band(10, 95, 15), true);
 
             Assert.False(state.LowAlertShouldBeActive);
         }
@@ -95,7 +100,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_LowAlertMessage_ContainsBatteryPercentage()
         {
-            var state = _evaluator.Evaluate(batteryPercent: 12, isOnAcPower: false, highThreshold: 95, lowThreshold: 15);
+            var state = _evaluator.Evaluate(12, Band(12, 95, 15), false);
 
             Assert.Contains("12", state.LowAlertMessage);
         }
@@ -122,8 +127,8 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_CustomThresholds_AreRespected()
         {
-            var highState = _evaluator.Evaluate(85, true, 80, 20);
-            var lowState = _evaluator.Evaluate(15, false, 80, 20);
+            var highState = _evaluator.Evaluate(85, Band(85, 80, 20), true);
+            var lowState = _evaluator.Evaluate(15, Band(15, 80, 20), false);
 
             Assert.True(highState.HighAlertShouldBeActive);
             Assert.True(lowState.LowAlertShouldBeActive);
@@ -132,7 +137,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_BatteryZeroAndNotOnAcPower_TriggersLowAlert()
         {
-            var state = _evaluator.Evaluate(0, false, 95, 15);
+            var state = _evaluator.Evaluate(0, Band(0, 95, 15), false);
 
             Assert.True(state.LowAlertShouldBeActive);
         }
@@ -140,7 +145,7 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_BatteryHundredAndOnAcPower_TriggersHighAlert()
         {
-            var state = _evaluator.Evaluate(100, true, 95, 15);
+            var state = _evaluator.Evaluate(100, Band(100, 95, 15), true);
 
             Assert.True(state.HighAlertShouldBeActive);
         }
@@ -148,8 +153,8 @@ namespace BatteryGuardian.Tests
         [Fact]
         public void Evaluate_MidRangeBatteryAndAnyPowerState_NoAlerts()
         {
-            var onAc = _evaluator.Evaluate(50, true, 95, 15);
-            var onBattery = _evaluator.Evaluate(50, false, 95, 15);
+            var onAc = _evaluator.Evaluate(50, Band(50, 95, 15), true);
+            var onBattery = _evaluator.Evaluate(50, Band(50, 95, 15), false);
 
             Assert.False(onAc.HighAlertShouldBeActive);
             Assert.False(onAc.LowAlertShouldBeActive);

@@ -1,4 +1,5 @@
 using System;
+using BatteryGuardian.Signals;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -55,7 +56,7 @@ namespace BatteryGuardian.SmartPlug
   /// throws for network failures; they are classified into
   /// <see cref="SmartPlugStatus.LastError"/>.
   /// </summary>
-  public async Task<SmartPlugStatus> EvaluateAsync(int batteryPercent, CancellationToken ct = default)
+  public async Task<SmartPlugStatus> EvaluateAsync(BatteryBand band, CancellationToken ct = default)
   {
    if (!_config.Enabled)
    {
@@ -100,7 +101,7 @@ namespace BatteryGuardian.SmartPlug
     }
 
     bool readOk = readError == SmartPlugError.None;
-    var decision = SmartPlugDecision.Evaluate(batteryPercent, batteryPercent >= 0, observed, _config);
+    var decision = SmartPlugDecision.Evaluate(band, observed, _config);
 
     bool commandSent = false;
     if (decision.Action == SmartPlugDecision.Action.TurnOff)

@@ -1,3 +1,4 @@
+using BatteryGuardian.Signals;
 using BatteryGuardian.SmartPlug;
 using Xunit;
 
@@ -5,6 +6,10 @@ namespace BatteryGuardian.Tests
 {
  public class SmartPlugDecisionTests
  {
+ /// <summary>The band the monitor would produce for this reading.</summary>
+ private static BatteryBand Band(int percent) =>
+  ThresholdMonitor.Evaluate(percent, true, new ThresholdPair(95, 15), BatteryBand.Unknown).Band;
+
  private static readonly SmartPlugConfig Cfg = new(true, 95, 15, "dev", "1.2.3.4", 6668, 1, 3);
 
  /// <summary>
@@ -36,35 +41,35 @@ namespace BatteryGuardian.Tests
  [Fact]
  public void DisabledProducesNoAction()
  {
- var d = SmartPlugDecision.Evaluate(99, true, RelayState.On, Cfg with { Enabled = false });
+ var d = SmartPlugDecision.Evaluate(Band(99), RelayState.On, Cfg with { Enabled = false });
  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 
  [Fact]
  public void HighThresholdTurnsOffWhenOn()
  {
- var d = SmartPlugDecision.Evaluate(95, true, RelayState.On, Cfg);
+ var d = SmartPlugDecision.Evaluate(Band(95), RelayState.On, Cfg);
  Assert.Equal(SmartPlugDecision.Action.TurnOff, d.Action);
  }
 
  [Fact]
  public void LowThresholdTurnsOnWhenOff()
  {
- var d = SmartPlugDecision.Evaluate(15, true, RelayState.Off, Cfg);
+ var d = SmartPlugDecision.Evaluate(Band(15), RelayState.Off, Cfg);
  Assert.Equal(SmartPlugDecision.Action.TurnOn, d.Action);
  }
 
  [Fact]
  public void BetweenThresholdsRetainsOn()
  {
- var d = SmartPlugDecision.Evaluate(50, true, RelayState.On, Cfg);
+ var d = SmartPlugDecision.Evaluate(Band(50), RelayState.On, Cfg);
  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 
  [Fact]
  public void BetweenThresholdsRetainsOff()
  {
- var d = SmartPlugDecision.Evaluate(50, true, RelayState.Off, Cfg);
+ var d = SmartPlugDecision.Evaluate(Band(50), RelayState.Off, Cfg);
  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 
@@ -78,21 +83,21 @@ namespace BatteryGuardian.Tests
  [Fact]
  public void HighButAlreadyOffDoesNothing()
  {
- var d = SmartPlugDecision.Evaluate(96, true, RelayState.Off, Cfg);
+ var d = SmartPlugDecision.Evaluate(Band(96), RelayState.Off, Cfg);
  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 
  [Fact]
  public void LowButAlreadyOnDoesNothing()
  {
- var d = SmartPlugDecision.Evaluate(10, true, RelayState.On, Cfg);
+ var d = SmartPlugDecision.Evaluate(Band(10), RelayState.On, Cfg);
  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 
  [Fact]
  public void AnUnknownRelayStateStillTurnsThePlugOffAtTheHighThreshold()
  {
-  var d = SmartPlugDecision.Evaluate(96, true, RelayState.Unknown, Cfg);
+  var d = SmartPlugDecision.Evaluate(Band(96), RelayState.Unknown, Cfg);
   Assert.Equal(SmartPlugDecision.Action.TurnOff, d.Action);
  }
 
@@ -101,14 +106,14 @@ namespace BatteryGuardian.Tests
  {
   // This is the case that sent the user to the phone app: the plug had been
   // off for hours, the state read came back unknown, and the app did nothing.
-  var d = SmartPlugDecision.Evaluate(10, true, RelayState.Unknown, Cfg);
+  var d = SmartPlugDecision.Evaluate(Band(10), RelayState.Unknown, Cfg);
   Assert.Equal(SmartPlugDecision.Action.TurnOn, d.Action);
  }
 
  [Fact]
  public void BetweenThresholdsAnUnknownRelayStateDoesNothing()
  {
-  var d = SmartPlugDecision.Evaluate(50, true, RelayState.Unknown, Cfg);
+  var d = SmartPlugDecision.Evaluate(Band(50), RelayState.Unknown, Cfg);
   Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 

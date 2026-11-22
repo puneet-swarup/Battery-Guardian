@@ -14,6 +14,7 @@ using System.Reflection;
 using BatteryGuardian.History;
 using BatteryGuardian.QuietHours;
 using BatteryGuardian.ChargeLimit;
+using BatteryGuardian.Signals;
 using BatteryGuardian.SmartPlug;
 
 namespace BatteryGuardian
@@ -65,6 +66,10 @@ namespace BatteryGuardian
         private DateTime _lastHistoryWriteUtc = DateTime.MinValue;
         private bool _updateCheckInProgress;
  private const int RefreshIntervalSeconds = 30;
+
+ // The band each pair of levels was in last time, so a change can be detected.
+ private BatteryBand _alertBand = BatteryBand.Unknown;
+ private BatteryBand _plugBand = BatteryBand.Unknown;
  private bool _plugFailureNotified;
  private int _plugRestoreAttempts;
  private const int MaxPlugRestoreAttempts = 6;
@@ -857,8 +862,23 @@ namespace BatteryGuardian
                 _notifyIcon.ToolTipText = tooltip;
 
                 RecordHistory(status.BatteryLifePercent, isOnAcPower);
-                EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
- _ = EvaluateSmartPlugAsync(status.BatteryLifePercent);
+
+                // One reading, classified once per pair of levels. The alerts
+                // and the plug no longer compare percentages themselves.
+                ThresholdSignal alertSignal = ThresholdMonitor.Evaluate(
+                    status.BatteryLifePercent, true,
+                    new ThresholdPair(_settings.HighBatteryThreshold, _settings.LowBatteryThreshold),
+                    _alertBand);
+                _alertBand = alertSignal.Band;
+
+                ThresholdSignal plugSignal = ThresholdMonitor.Evaluate(
+                    status.BatteryLifePercent, true,
+                    new ThresholdPair(_settings.SmartPlugHighThreshold, _settings.SmartPlugLowThreshold),
+                    _plugBand);
+                _plugBand = plugSignal.Band;
+
+                EvaluateAlerts(status.BatteryLifePercent, alertSignal.Band, isOnAcPower);
+                _ = EvaluateSmartPlugAsync(plugSignal.Band);
             }
             else
             {
@@ -926,7 +946,7 @@ namespace BatteryGuardian
             return string.IsNullOrEmpty(remaining) ? "Time remaining: Calculating..." : $"Time remaining: {remaining}";
         }
 
-        private void EvaluateAlerts(int batteryPercent, bool isCharging, bool isOnAcPower)
+        private void EvaluateAlerts(int batteryPercent, BatteryBand band, bool isOnAcPower)
         {
             DiagnosticLog.Write($"EvaluateAlerts: batteryPercent={batteryPercent}, " +
                     $"isCharging={isCharging}, isOnAcPower={isOnAcPower}, " +
@@ -939,11 +959,7 @@ namespace BatteryGuardian
                 return;
             }
 
-            AlertState newState = _evaluator.Evaluate(
-                batteryPercent,
-                isOnAcPower,
-                _settings.HighBatteryThreshold,
-                _settings.LowBatteryThreshold);
+            AlertState newState = _evaluator.Evaluate(batteryPercent, band, isOnAcPower);
 
             if (newState.HighAlertShouldBeActive && !_highAlertActive)
             {
@@ -1115,7 +1131,7 @@ namespace BatteryGuardian
         /// plug carries on switching the charger. Adding an IsSnoozed() check
         /// would quietly turn snooze into a way to disable the protection.
         /// </remarks>
-        private async Task EvaluateSmartPlugAsync(int batteryPercent)
+        private async Task EvaluateSmartPlugAsync(BatteryBand band)
  {
   try
   {
@@ -1123,7 +1139,7 @@ namespace BatteryGuardian
    var controller = EnsureSmartPlugController();
    if (controller == null) return;
 
-   SmartPlugStatus status = await controller.EvaluateAsync(batteryPercent);
+   SmartPlugStatus status = await controller.EvaluateAsync(band);
 
    // A snooze silences the reminders, not the protection. A command that did
    // not reach the plug is therefore reported once, even mid-snooze.
