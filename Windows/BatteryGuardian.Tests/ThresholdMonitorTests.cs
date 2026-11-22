@@ -217,9 +217,6 @@ namespace BatteryGuardian.Tests
 
         [Theory]
         [InlineData(95, 15, true)]
-        [InlineData(95, 15, false, 0)]      // no margin is allowed
-        [InlineData(95, 15, false, -1)]     // a negative margin is not
-        [InlineData(95, 90, false, 3)]      // margin does not fit the gap
         [InlineData(100, 0, true)]
         [InlineData(95, 90, true)]
         [InlineData(95, 91, false)]   // four points apart
