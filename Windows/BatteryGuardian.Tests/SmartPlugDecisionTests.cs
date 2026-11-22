@@ -34,7 +34,7 @@ namespace BatteryGuardian.Tests
  [InlineData(10, RelayState.Unknown, SmartPlugDecision.Action.TurnOn)]
  public void DecisionMatrix(int batteryPercent, RelayState relay, SmartPlugDecision.Action expected)
  {
-  var decision = SmartPlugDecision.Evaluate(batteryPercent, true, relay, Cfg);
+  var decision = SmartPlugDecision.Evaluate(Band(batteryPercent), relay, Cfg);
   Assert.Equal(expected, decision.Action);
  }
 
@@ -76,7 +76,7 @@ namespace BatteryGuardian.Tests
  [Fact]
  public void UnknownBatteryProducesNoAction()
  {
- var d = SmartPlugDecision.Evaluate(-1, false, RelayState.On, Cfg);
+ var d = SmartPlugDecision.Evaluate(BatteryBand.Unknown, RelayState.On, Cfg);
  Assert.Equal(SmartPlugDecision.Action.None, d.Action);
  }
 

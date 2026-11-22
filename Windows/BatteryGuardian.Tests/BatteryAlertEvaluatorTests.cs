@@ -114,8 +114,8 @@ namespace BatteryGuardian.Tests
         {
             for (int percent = 0; percent <= 100; percent += 5)
             {
-                var onAc = _evaluator.Evaluate(percent, true, 95, 15);
-                var onBattery = _evaluator.Evaluate(percent, false, 95, 15);
+                var onAc = _evaluator.Evaluate(percent, Band(percent), true);
+                var onBattery = _evaluator.Evaluate(percent, Band(percent), false);
 
                 Assert.False(onAc.HighAlertShouldBeActive && onAc.LowAlertShouldBeActive,
                     $"Both alerts active at {percent}% on AC power");
