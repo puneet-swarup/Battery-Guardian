@@ -16,6 +16,13 @@ on:
       - '.github/workflows/android.yml'
   workflow_dispatch:
 
+# A newer push to the same branch makes the older run pointless: it tests code
+# nobody will install. Cancel it rather than let it burn a runner. Tag runs are
+# keyed by the tag, so a release is never cancelled by a later commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
