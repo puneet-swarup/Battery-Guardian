@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.8] - 2026-11-22
+
+### Changed (Windows)
+- **One command path for the plug.** There were two: the threshold evaluation (took the gate, retried, read first) and a second one for sleep and restore (took nothing, retried nothing, never read). Two sets of rules for the same hardware is why every fix landed in a different corner. `SetRelayAsync` is now the only way to change the relay; the evaluation, the sleep cut and the wake restore all go through it and differ only in the arguments they pass.
+- **Observation and intent are separate fields, and now actually behave that way.** `Status.Relay` is written only by a successful read; `IntendedRelay` only by a send. Previously a command wrote its own value into `Status.Relay` and the two were indistinguishable, so an unconfirmed command could be read back later as if the plug had reported it.
+- The restore now verifies: it re-reads after switching and records what the plug actually reports, instead of assuming the command worked.
+- Smaller fixes in the same pass: the restore path logs where it can be seen; a new sleep resets the retry budget instead of inheriting a spent one; the connection test waits five seconds at most instead of queueing behind an evaluation; the refresh interval and the evaluation cap are named constants that refer to each other; a doc comment that had drifted onto the wrong method is back where it belongs; the unused `known` parameter is gone.
+
 ## [2.5.7] - 2026-11-22
 
 ### Fixed (Windows)

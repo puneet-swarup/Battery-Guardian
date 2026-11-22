@@ -118,6 +118,69 @@ namespace BatteryGuardian.Tests
    public void Dispose() { }
   }
 
+  [Fact]
+  public async Task ACommandIsNeverRecordedAsAnObservation()
+  {
+   // The plug cannot be read but accepts commands. The status must keep saying
+   // "unknown" - an unconfirmed command is intent, not observation - while
+   // IntendedRelay records what we asked for.
+   var plug = new UnreadablePlug();
+   using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
+
+   SmartPlugStatus status = await controller.SetRelayAsync(false, TimeSpan.FromSeconds(5));
+
+   Assert.True(plug.TurnedOff);
+   Assert.Equal(RelayState.Unknown, status.Relay);
+   Assert.Equal(RelayState.Off, controller.IntendedRelay);
+  }
+
+  [Fact]
+  public async Task AVerifiedCommandRecordsWhatThePlugReports()
+  {
+   var plug = new ScriptedPlug(RelayState.Off);
+   using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
+
+   SmartPlugStatus status = await controller.SetRelayAsync(false, TimeSpan.FromSeconds(5), verify: true);
+
+   Assert.Equal(RelayState.Off, status.Relay);
+   Assert.Contains("reports", status.Message);
+  }
+
+  [Fact]
+  public async Task ACommandThatMustNotWaitIsDroppedWhenThePlugIsBusy()
+  {
+   // The sleep path must never wait: send, or give up.
+   var plug = new BlockingPlug();
+   using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
+
+   Task<SmartPlugStatus> busy = controller.EvaluateAsync(50);
+   Assert.True(plug.Entered.Wait(TimeSpan.FromSeconds(5)));
+
+   var clock = Stopwatch.StartNew();
+   SmartPlugStatus status = await controller.SetRelayAsync(
+    false, TimeSpan.FromSeconds(2), verify: false, waitForGate: false);
+   clock.Stop();
+
+   Assert.Contains("busy", status.Message, StringComparison.OrdinalIgnoreCase);
+   Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), "the command waited for the gate");
+
+   plug.Release.Set();
+   await busy;
+  }
+
+  private sealed class ScriptedPlug : ISmartPlug
+  {
+   private RelayState _relay;
+
+   public ScriptedPlug(RelayState initial) => _relay = initial;
+
+   public Task<RelayState> GetStatusAsync(CancellationToken ct = default) => Task.FromResult(_relay);
+   public Task TurnOnAsync(CancellationToken ct = default) { _relay = RelayState.On; return Task.CompletedTask; }
+   public Task TurnOffAsync(CancellationToken ct = default) { _relay = RelayState.Off; return Task.CompletedTask; }
+   public Task<bool> TestConnectionAsync(CancellationToken ct = default) => Task.FromResult(true);
+   public void Dispose() { }
+  }
+
   private sealed class BlockingPlug : ISmartPlug
   {
    public readonly ManualResetEventSlim Entered = new(false);

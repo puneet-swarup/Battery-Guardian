@@ -64,6 +64,7 @@ namespace BatteryGuardian
         private readonly QuietHoursEvaluator _quietHoursEvaluator;
         private DateTime _lastHistoryWriteUtc = DateTime.MinValue;
         private bool _updateCheckInProgress;
+ private const int RefreshIntervalSeconds = 30;
  private bool _plugFailureNotified;
  private int _plugRestoreAttempts;
  private const int MaxPlugRestoreAttempts = 6;
@@ -76,7 +77,9 @@ namespace BatteryGuardian
             InitializeComponent();
             _speechSynthesizer = new SpeechSynthesizer();
 
-            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            // The plug evaluation is capped below this interval on purpose; see
+            // SmartPlugController.EvaluationTimeoutSeconds.
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(RefreshIntervalSeconds) };
             _refreshTimer.Tick += RefreshTimer_Tick;
 
             _alarmTimer = new DispatcherTimer();
@@ -855,7 +858,7 @@ namespace BatteryGuardian
 
                 RecordHistory(status.BatteryLifePercent, isOnAcPower);
                 EvaluateAlerts(status.BatteryLifePercent, isCharging, isOnAcPower);
- _ = EvaluateSmartPlugAsync(status.BatteryLifePercent, true);
+ _ = EvaluateSmartPlugAsync(status.BatteryLifePercent);
             }
             else
             {
@@ -1112,7 +1115,7 @@ namespace BatteryGuardian
         /// plug carries on switching the charger. Adding an IsSnoozed() check
         /// would quietly turn snooze into a way to disable the protection.
         /// </remarks>
-        private async Task EvaluateSmartPlugAsync(int batteryPercent, bool known)
+        private async Task EvaluateSmartPlugAsync(int batteryPercent)
  {
   try
   {
@@ -1120,7 +1123,7 @@ namespace BatteryGuardian
    var controller = EnsureSmartPlugController();
    if (controller == null) return;
 
-   SmartPlugStatus status = await controller.EvaluateAsync(known ? batteryPercent : -1);
+   SmartPlugStatus status = await controller.EvaluateAsync(batteryPercent);
 
    // A snooze silences the reminders, not the protection. A command that did
    // not reach the plug is therefore reported once, even mid-snooze.
@@ -1263,6 +1266,7 @@ namespace BatteryGuardian
    // Record it even when it is unknown: the switch still goes down, and the low
    // threshold brings it back if nothing else does.
    _settings.SmartPlugStateBeforeSleep = SmartPlugSleepPolicy.Remember(known);
+   _plugRestoreAttempts = 0;      // a new sleep earns a new retry budget
    SaveSettings(_settings);
 
    DiagnosticLog.WriteAlways($"SLEEP: cutting from '{known}', remembered '{_settings.SmartPlugStateBeforeSleep}'.");
@@ -1273,7 +1277,13 @@ namespace BatteryGuardian
    {
     try
     {
-     SmartPlugStatus status = await controller.ApplyNowAsync(false, TimeSpan.FromSeconds(2));
+     SmartPlugStatus status = await controller.SetRelayAsync(
+      on: false,
+      timeout: TimeSpan.FromSeconds(2),
+      verify: false,
+      waitForGate: false,
+      retryBackoffMs: Array.Empty<int>());
+
      DiagnosticLog.WriteAlways($"SLEEP: cut finished, error={status.LastError} message='{status.Message}'.");
     }
     catch (Exception ex)
@@ -1299,8 +1309,13 @@ namespace BatteryGuardian
    SmartPlugController? controller = EnsureSmartPlugController();
    if (controller == null) return;
 
-   SmartPlugStatus status = await controller.ApplyNowAsync(restore.Value, TimeSpan.FromSeconds(5));
-   DiagnosticLog.Write($"Returned: plug restored to {(restore.Value ? "on" : "off")} ({status.Message}).");
+   SmartPlugStatus status = await controller.SetRelayAsync(
+    on: restore.Value,
+    timeout: TimeSpan.FromSeconds(5),
+    verify: true);
+
+   DiagnosticLog.WriteAlways(
+    $"RESTORE: wanted {(restore.Value ? "on" : "off")}, error={status.LastError}, message='{status.Message}', plug now reports {status.Relay}.");
 
    if (status.LastError == SmartPlugError.None)
    {
