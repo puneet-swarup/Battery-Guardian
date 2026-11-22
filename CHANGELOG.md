@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.10] - 2026-11-22
+
+### Changed
+- **One place classifies a battery reading, on both platforms.** The alerts and the smart plug each compared a percentage against their own thresholds in their own code, with their own state - two pipelines reading the same number, which is how they drifted apart and why every plug fix landed in a different corner. A pure `ThresholdMonitor` now returns a signal carrying both a level ("at or above high right now") and an edge ("this is the reading that crossed"); the plug consumes the level because a switch must be correct even if it missed the crossing, and the alerts consume the edge because a reminder fires once. Same type, same semantics and the same test table on Windows and Android.
+- No behaviour is meant to change. The plug is still level-driven and idempotent, the alerts still fire once per crossing, and each pair of levels stays independent.
+- `docs/architecture.md` describes the pipeline, the patterns and the reasoning; [ADR 0007](docs/adr/0007-threshold-signals-drive-consumers.md) records the decision and its costs.
+
 ## [2.5.9] - 2026-11-22
 
 ### Fixed

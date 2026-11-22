@@ -15,3 +15,4 @@ Format inspired by [Michael Nygard's original proposal](https://cognitect.com/bl
 | [0004](0004-script-installer-over-msi.md) | Ship a script-based installer instead of an MSI | Accepted |
 | [0005](0005-two-release-variants.md) | Ship both self-contained and framework-dependent builds | Accepted |
 | [0006](0006-minver-for-versioning.md) | Derive version from Git tags via MinVer | Accepted |
+| [0007](0007-threshold-signals-drive-consumers.md) | Threshold signals drive the alert and plug consumers | Accepted |

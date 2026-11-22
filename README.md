@@ -108,6 +108,17 @@ Setup steps, the fields, and what to check when it does not connect are in
 [This search](https://www.google.com/search?q=tuya+smart+plug+what+is) explains
 the hardware in a sentence.
 
+## 🏗️ How it is built
+
+Both apps share one shape: a pure `ThresholdMonitor` classifies each battery
+reading once, and the consumers - alerts, smart plug, history - react to the
+same signal. Nothing downstream compares a percentage with a threshold.
+
+[Architecture](docs/architecture.md) covers the pipeline, the patterns and why
+each is there, what is deliberately different between the two platforms, and
+what is and is not covered by tests. The reasoning behind the central decision
+is in [ADR 0007](docs/adr/0007-threshold-signals-drive-consumers.md).
+
 ## 🛠️ Prerequisites
 
 - **Windows 10 version 1809 (build 17763) or later** (64-bit)..

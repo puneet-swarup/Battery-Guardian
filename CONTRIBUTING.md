@@ -42,6 +42,10 @@ commands, on JDK 17 and .NET 10.
 
 - **Behaviour changes need a test.** The alert thresholds, quiet hours and
   charge-limit rules are pure functions; test them without a device.
+- **Put logic in the pure core, not in the window or the service.** A battery
+  reading is classified once, by `ThresholdMonitor`, and the consumers react to
+  the signal. If you find yourself comparing a percentage with a threshold
+  anywhere else, that is the bug - see [docs/architecture.md](docs/architecture.md).
 - **Keep the platform layer thin.** Battery reads, notifications and the tray
   belong in the platform folder; decisions belong in the shared rules.
 - **A new feature updates the user-visible text in the same commit.** The About
