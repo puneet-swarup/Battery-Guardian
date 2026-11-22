@@ -103,7 +103,7 @@ class SmartPlugDecisionTest {
 
  @Test
  fun unknownBatteryCausesNoAction() {
- val d = SmartPlugDecision.evaluate(-1, false, RelayState.ON, cfg)
+ val d = SmartPlugDecision.evaluate(BatteryBand.UNKNOWN, RelayState.ON, cfg)
  assertEquals(SmartPlugDecision.Action.NONE, d.action)
  }
 
