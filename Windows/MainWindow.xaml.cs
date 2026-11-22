@@ -949,7 +949,7 @@ namespace BatteryGuardian
         private void EvaluateAlerts(int batteryPercent, BatteryBand band, bool isOnAcPower)
         {
             DiagnosticLog.Write($"EvaluateAlerts: batteryPercent={batteryPercent}, " +
-                    $"isCharging={isCharging}, isOnAcPower={isOnAcPower}, " +
+                    $"band={band}, isOnAcPower={isOnAcPower}, " +
                     $"highActive={_highAlertActive}, lowActive={_lowAlertActive}");
 
             if (IsSnoozed())
