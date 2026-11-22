@@ -34,17 +34,22 @@ namespace BatteryGuardian.Tests
         [InlineData(-50)]
         [InlineData(101)]    // a reading that cannot be real
         [InlineData(999)]
-        public void UnusablePercentagesAreUnknown(int percent)
+        public void UnusablePercentagesKeepTheBand(int percent)
         {
+            // An unusable reading says nothing about the battery. Clearing the band
+            // here used to drop an active alert, which then fired again on the next
+            // good reading - the double notification users reported.
             var signal = ThresholdMonitor.Evaluate(percent, true, Pair, BatteryBand.InBand);
-            Assert.Equal(BatteryBand.Unknown, signal.Band);
+            Assert.Equal(BatteryBand.InBand, signal.Band);
+            Assert.False(signal.Changed);
         }
 
         [Fact]
-        public void AReadingTheCallerCannotUseIsUnknown()
+        public void AReadingTheCallerCannotUseKeepsTheBand()
         {
             var signal = ThresholdMonitor.Evaluate(80, readingUsable: false, Pair, BatteryBand.InBand);
-            Assert.Equal(BatteryBand.Unknown, signal.Band);
+            Assert.Equal(BatteryBand.InBand, signal.Band);
+            Assert.False(signal.Changed);
         }
 
         // ---- invalid pairs cannot produce a band --------------------------
@@ -115,12 +120,11 @@ namespace BatteryGuardian.Tests
         }
 
         [Fact]
-        public void GoingFromABandToUnknownIsAChange()
+        public void AnUnusableReadingDoesNotEndAHighBand()
         {
             var signal = ThresholdMonitor.Evaluate(-1, true, Pair, BatteryBand.High);
-            Assert.Equal(BatteryBand.Unknown, signal.Band);
-            Assert.True(signal.Changed);
-            Assert.False(signal.CrossedHigh);
+            Assert.Equal(BatteryBand.High, signal.Band);
+            Assert.False(signal.Changed);
         }
 
         [Fact]
@@ -233,12 +237,22 @@ namespace BatteryGuardian.Tests
         [Theory]
         [InlineData(3, true)]
         [InlineData(0, true)]
+        [InlineData(40, true)]    // clamped, not rejected: a tight pair still works
         [InlineData(-1, false)]
-        [InlineData(40, false)]   // too large for a 95/15 pair
         public void TheMarginHasItsOwnRules(int margin, bool valid)
         {
             var pair = new ThresholdPair(95, 15, margin);
             Assert.Equal(valid, pair.ValidationError() == null);
+        }
+
+        [Fact]
+        public void ATightPairStillHasSomeHysteresis()
+        {
+            // 95/90 is five points apart: the margin is clamped to two, so 93 still
+            // counts as high and 92 does not.
+            var tight = new ThresholdPair(95, 90, 3);
+            Assert.Equal(BatteryBand.High, ThresholdMonitor.Evaluate(93, true, tight, BatteryBand.High).Band);
+            Assert.Equal(BatteryBand.InBand, ThresholdMonitor.Evaluate(92, true, tight, BatteryBand.High).Band);
         }
     }
 }
