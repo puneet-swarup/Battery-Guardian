@@ -168,6 +168,11 @@ namespace BatteryGuardian
             testLowItem.Click += (s, e) => TriggerTestAlert(high: false);
             contextMenu.Items.Add(testLowItem);
 
+            var plugStatusItem = new System.Windows.Controls.MenuItem { Header = "Read Smart Plug Now" };
+            plugStatusItem.ToolTip = "Asks the plug for its relay state and shows what it answered.";
+            plugStatusItem.Click += async (s, e) => await ShowPlugStatusAsync();
+            contextMenu.Items.Add(plugStatusItem);
+
             var testSleepItem = new System.Windows.Controls.MenuItem { Header = "Test Sleep Handling" };
             testSleepItem.ToolTip = "Cuts the plug, waits three seconds, puts it back, and logs what happened.";
             testSleepItem.Click += async (s, e) => await TestSleepHandlingAsync();
@@ -1162,6 +1167,45 @@ namespace BatteryGuardian
  /// Runs the sleep path on demand so it can be checked without closing the lid:
  /// cut the plug, wait, put it back, and report what happened.
  /// </summary>
+ /// <summary>
+ /// Asks the plug what it is doing, right now, and puts the answer on screen so
+ /// it can be compared with the physical socket. Nothing is switched.
+ /// </summary>
+ private async Task ShowPlugStatusAsync()
+ {
+  try
+  {
+   SmartPlugController? controller = EnsureSmartPlugController();
+   if (controller == null)
+   {
+    System.Windows.MessageBox.Show(
+     "The smart plug is not configured.\n\nTurn it on in Settings and enter the device ID, IP address and local key.",
+     "Smart Plug", MessageBoxButton.OK, MessageBoxImage.Information);
+    return;
+   }
+
+   SmartPlugStatus status = await controller.ReadStatusAsync(TimeSpan.FromSeconds(5));
+   DiagnosticLog.WriteAlways($"PLUG READ: relay={status.Relay} error={status.LastError} message='{status.Message}'");
+
+   string text =
+    $"Relay state: {status.Relay}\n" +
+    $"Answer: {(status.Connected ? "yes" : "no")}\n" +
+    $"Last error: {status.LastError}\n" +
+    $"Message: {status.Message}\n\n" +
+    $"Does that match the socket? A plug that is switched off should say Off.";
+
+   System.Windows.MessageBox.Show(text, "Smart Plug",
+    MessageBoxButton.OK,
+    status.Connected ? MessageBoxImage.Information : MessageBoxImage.Warning);
+  }
+  catch (Exception ex)
+  {
+   DiagnosticLog.WriteAlways($"PLUG READ failed: {ex.GetType().Name}: {ex.Message}");
+   System.Windows.MessageBox.Show("Could not read the plug: " + ex.Message,
+    "Smart Plug", MessageBoxButton.OK, MessageBoxImage.Warning);
+  }
+ }
+
  private async Task TestSleepHandlingAsync()
  {
   try

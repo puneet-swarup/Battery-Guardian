@@ -176,6 +176,37 @@ namespace BatteryGuardian.SmartPlug
  /// down, where the OS will not wait for us: a slow, correct attempt is worth
  /// less than a fast one.
  /// </summary>
+ /// <summary>
+ /// Reads the relay state and changes nothing. Used by the "Read Smart Plug Now"
+ /// menu item so the state on screen can be compared with the physical plug.
+ /// </summary>
+ public async Task<SmartPlugStatus> ReadStatusAsync(TimeSpan timeout)
+ {
+  using var cts = new CancellationTokenSource(timeout);
+  try
+  {
+   RelayState relay = await _plug.GetStatusAsync(cts.Token).ConfigureAwait(false);
+   _status = _status with
+   {
+    Connected = true,
+    Relay = relay,
+    LastSuccessUtc = DateTime.UtcNow,
+    LastError = SmartPlugError.None,
+    Message = $"The plug reports {relay}."
+   };
+  }
+  catch (OperationCanceledException)
+  {
+   _status = _status with { Connected = false, LastError = SmartPlugError.Timeout, Message = "The plug did not answer in time." };
+  }
+  catch (Exception ex)
+  {
+   _status = _status with { Connected = false, LastError = SmartPlugError.Unreachable, Message = ex.Message };
+  }
+
+  return _status;
+ }
+
  public async Task<SmartPlugStatus> ApplyNowAsync(bool on, TimeSpan timeout)
  {
   using var cts = new CancellationTokenSource(timeout);

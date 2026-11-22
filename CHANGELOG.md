@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.5] - 2026-11-22
+
+### Added (Windows)
+- **Read Smart Plug Now.** A tray item that asks the plug for its relay state and shows what it answered, without switching anything. It turns "is the plug on?" from a guess into a reading that can be compared with the physical socket, which is what was missing every time this feature was reported broken.
+
 ## [2.5.4] - 2026-11-22
 
 ### Fixed (Windows)
