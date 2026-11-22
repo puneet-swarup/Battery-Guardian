@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.3] - 2026-11-22
+
+### Fixed (smart plug)
+- **The charger still did not come back on at the low threshold.** The decision had been taught to act on an unknown relay state, but the controller read the state first and gave up when that read failed - so the decision was never asked. The plug sits idle for hours before the low level arrives, which is exactly when the read fails, while cutting the power works because the plug is awake and answering. A failed read now means "state unknown, act anyway": the command is sent, both commands being idempotent. If there was nothing to do and the read failed, the failure is reported rather than passed off as a clean result. Same fix on Android.
+- Three controller tests on Windows and two on Android, including the exact case: a plug whose state read throws must still be switched on at 10%.
+
 ## [2.5.2] - 2026-11-22
 
 ### Fixed (Windows)

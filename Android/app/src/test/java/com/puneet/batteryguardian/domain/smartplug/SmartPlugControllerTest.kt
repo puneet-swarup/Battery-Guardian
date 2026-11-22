@@ -45,6 +45,40 @@ class SmartPlugControllerTest {
   }
  }
 
+ @Test
+ fun turnsThePlugOnEvenWhenTheStateReadFails() {
+  // The plug is idle for hours before the low threshold arrives, so the state
+  // read fails exactly when the charger needs to come back on.
+  val plug = UnreadablePlug()
+  val controller = SmartPlugController(plug, cfg)
+
+  controller.evaluate(10, true)
+
+  assertTrue("the plug was never told to switch on", plug.turnedOn)
+ }
+
+ @Test
+ fun reportsAnUnreadablePlugBetweenTheThresholds() {
+  val plug = UnreadablePlug()
+  val controller = SmartPlugController(plug, cfg)
+
+  controller.evaluate(50, true)
+
+  assertFalse(plug.turnedOn)
+  assertTrue(controller.lastError != null)
+ }
+
+ private class UnreadablePlug : SmartPlug {
+  var turnedOn = false
+  var turnedOff = false
+
+  override fun getStatus(): RelayState = throw IllegalStateException("the plug did not answer")
+  override fun turnOn() { turnedOn = true }
+  override fun turnOff() { turnedOff = true }
+  override fun testConnection() = false
+  override fun close() {}
+ }
+
  private class BlockingPlug : SmartPlug {
   val entered = CountDownLatch(1)
   val release = CountDownLatch(1)

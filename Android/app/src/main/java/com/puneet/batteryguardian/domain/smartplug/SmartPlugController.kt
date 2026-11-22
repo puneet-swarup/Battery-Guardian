@@ -34,14 +34,35 @@ class SmartPlugController(
   }
 
   try {
-   val relay = plug.getStatus()
+   // Read the relay state, but never let a failed read stop the command. The
+   // plug sits idle for hours before the low threshold arrives, which is exactly
+   // when the read fails - and the commands are idempotent, so an unknown state
+   // is no reason to sit still. This was the last reason the charger never came
+   // back on: the decision had been taught to act on an unknown state, but the
+   // read threw before it was ever asked.
+   var readError: String? = null
+   val relay = try {
+    plug.getStatus()
+   } catch (t: Throwable) {
+    readError = t.message ?: t.javaClass.simpleName
+    RelayState.UNKNOWN
+   }
    lastRelay = relay
+
    val decision = SmartPlugDecision.evaluate(batteryPercent, batteryKnown, relay, config)
    when (decision.action) {
     SmartPlugDecision.Action.TURN_OFF -> { plug.turnOff(); lastRelay = RelayState.OFF }
     SmartPlugDecision.Action.TURN_ON -> { plug.turnOn(); lastRelay = RelayState.ON }
     else -> {}
    }
+
+   // Nothing to do and the plug did not answer: report the failure rather than a
+   // clean status, so an unreachable plug is never mistaken for a quiet one.
+   if (readError != null && decision.action == SmartPlugDecision.Action.NONE) {
+    lastError = readError
+    return lastRelay
+   }
+
    lastError = null
    lastSuccessEpochMs = System.currentTimeMillis()
    return lastRelay

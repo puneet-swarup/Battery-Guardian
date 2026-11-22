@@ -63,8 +63,31 @@ namespace BatteryGuardian.SmartPlug
 
   try
   {
-   // 1. Determine actual relay state first (authoritative).
-   RelayState relay = await GetRelayWithRetryAsync(token).ConfigureAwait(false);
+   // 1. Read the relay state, but never let a failed read stop the command.
+   //    The plug sits idle for hours before the low threshold arrives, which is
+   //    exactly when the read fails - and the commands are idempotent, so an
+   //    unknown state is no reason to sit still. This was the last reason the
+   //    charger never came back on: the decision had already been taught to act
+   //    on an unknown state, but the read threw before it was ever asked.
+   RelayState relay;
+   SmartPlugError readError = SmartPlugError.None;
+   string? readMessage = null;
+
+   try
+   {
+    relay = await GetRelayWithRetryAsync(token).ConfigureAwait(false);
+   }
+   catch (OperationCanceledException)
+   {
+    throw;
+   }
+   catch (Exception ex)
+   {
+    relay = RelayState.Unknown;
+    readError = SmartPlugError.Unreachable;
+    readMessage = ex.Message;
+   }
+
    var decision = SmartPlugDecision.Evaluate(batteryPercent, batteryPercent >= 0, relay, _config);
 
    switch (decision.Action)
@@ -80,6 +103,14 @@ namespace BatteryGuardian.SmartPlug
     case SmartPlugDecision.Action.None:
     default:
      break;
+   }
+
+   // Nothing to do and the plug did not answer: report the failure rather than
+   // a clean status, so an unreachable plug is never mistaken for a quiet one.
+   if (readError != SmartPlugError.None && decision.Action == SmartPlugDecision.Action.None)
+   {
+    _status = _status with { Connected = false, LastError = readError, Message = readMessage };
+    return _status;
    }
 
    _status = new SmartPlugStatus(true, true, relay, DateTime.UtcNow, SmartPlugError.None, decision.Reason);

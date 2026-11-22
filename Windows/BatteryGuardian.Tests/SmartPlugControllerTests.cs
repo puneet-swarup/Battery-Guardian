@@ -65,6 +65,59 @@ namespace BatteryGuardian.Tests
    Assert.Equal(RelayState.Off, recovered.Relay);
   }
 
+  [Fact]
+  public async Task TurnsThePlugOnEvenWhenTheStateReadFails()
+  {
+   // The plug is idle for hours before the low threshold arrives, so the state
+   // read fails exactly when the charger needs to come back on. This is the bug
+   // the user kept hitting: the read threw and the command was never sent.
+   var plug = new UnreadablePlug();
+   using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
+
+   SmartPlugStatus status = await controller.EvaluateAsync(10);
+
+   Assert.True(plug.TurnedOn, "the plug was never told to switch on");
+   Assert.Equal(RelayState.On, status.Relay);
+  }
+
+  [Fact]
+  public async Task TurnsThePlugOffEvenWhenTheStateReadFails()
+  {
+   var plug = new UnreadablePlug();
+   using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
+
+   SmartPlugStatus status = await controller.EvaluateAsync(96);
+
+   Assert.True(plug.TurnedOff, "the plug was never told to switch off");
+   Assert.Equal(RelayState.Off, status.Relay);
+  }
+
+  [Fact]
+  public async Task AnUnreadablePlugBetweenTheThresholdsIsReportedAsAFailure()
+  {
+   var plug = new UnreadablePlug();
+   using var controller = new SmartPlugController(plug, Cfg, new[] { 0 });
+
+   SmartPlugStatus status = await controller.EvaluateAsync(50);
+
+   Assert.Equal(SmartPlugError.Unreachable, status.LastError);
+   Assert.False(plug.TurnedOn || plug.TurnedOff);
+  }
+
+  private sealed class UnreadablePlug : ISmartPlug
+  {
+   public bool TurnedOn { get; private set; }
+   public bool TurnedOff { get; private set; }
+
+   public Task<RelayState> GetStatusAsync(CancellationToken ct = default) =>
+    throw new InvalidOperationException("the plug did not answer");
+
+   public Task TurnOnAsync(CancellationToken ct = default) { TurnedOn = true; return Task.CompletedTask; }
+   public Task TurnOffAsync(CancellationToken ct = default) { TurnedOff = true; return Task.CompletedTask; }
+   public Task<bool> TestConnectionAsync(CancellationToken ct = default) => Task.FromResult(false);
+   public void Dispose() { }
+  }
+
   private sealed class BlockingPlug : ISmartPlug
   {
    public readonly ManualResetEventSlim Entered = new(false);
