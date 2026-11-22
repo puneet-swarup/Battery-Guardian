@@ -196,8 +196,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
  bindText("sp_host", current.smartPlugHost) { v -> save { it.copy(smartPlugHost = v) } }
  bindInt("sp_port", current.smartPlugPort) { v -> save { it.copy(smartPlugPort = v) } }
  bindInt("sp_dp", current.smartPlugRelayDp) { v -> save { it.copy(smartPlugRelayDp = v) } }
- bindSlider("sp_high", current.smartPlugHighThreshold) { v -> save { it.copy(smartPlugHighThreshold = v) } }
- bindSlider("sp_low", current.smartPlugLowThreshold) { v -> save { it.copy(smartPlugLowThreshold = v) } }
+ // The plug follows the High and Low levels above; it no longer has its own.
  val credStore = TuyaCredentialStore(requireContext())
  findPreference<EditTextPreference>("sp_local_key")?.apply {
  summary = if (credStore.hasKey()) "Stored securely" else "Not set"

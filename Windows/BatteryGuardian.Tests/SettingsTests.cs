@@ -49,8 +49,9 @@ namespace BatteryGuardian.Tests
 
    // The plug levels must satisfy the same rule the controller enforces, or the
    // feature is dead on arrival for anyone who enables it without editing them.
-   Assert.True(settings.SmartPlugLowThreshold < settings.SmartPlugHighThreshold);
-   Assert.True(settings.SmartPlugHighThreshold - settings.SmartPlugLowThreshold
+   // One pair of levels drives both the alerts and the plug.
+   Assert.True(settings.LowBatteryThreshold < settings.HighBatteryThreshold);
+   Assert.True(settings.HighBatteryThreshold - settings.LowBatteryThreshold
      >= SmartPlugConfig.MinimumGapPercent);
   }
 

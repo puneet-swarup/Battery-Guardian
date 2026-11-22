@@ -330,7 +330,7 @@ class BatteryMonitorService : Service() {
  val signal = ThresholdMonitor.evaluate(
   batteryPercent = snapshot.percent,
   readingUsable = snapshot.percent >= 0,
-  pair = ThresholdPair(settings.smartPlugHighThreshold, settings.smartPlugLowThreshold),
+  pair = ThresholdPair(settings.highBatteryThreshold, settings.lowBatteryThreshold),
   previous = plugBand
  )
  plugBand = signal.band

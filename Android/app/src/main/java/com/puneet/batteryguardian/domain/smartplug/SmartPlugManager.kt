@@ -22,8 +22,8 @@ class SmartPlugManager(private val context: Context) {
  close()
  val config = SmartPlugConfig(
  enabled = settings.smartPlugEnabled,
- highThreshold = settings.smartPlugHighThreshold,
- lowThreshold = settings.smartPlugLowThreshold,
+ highThreshold = settings.highBatteryThreshold,
+ lowThreshold = settings.lowBatteryThreshold,
  deviceId = settings.smartPlugDeviceId,
  host = settings.smartPlugHost,
  port = settings.smartPlugPort,
@@ -53,7 +53,7 @@ class SmartPlugManager(private val context: Context) {
  }
 
  private fun buildSignature(s: Settings, key: String): String =
- listOf(s.smartPlugDeviceId, s.smartPlugHost, s.smartPlugPort.toString(), s.smartPlugRelayDp.toString(), key, s.smartPlugHighThreshold.toString(), s.smartPlugLowThreshold.toString()).joinToString("|")
+ listOf(s.smartPlugDeviceId, s.smartPlugHost, s.smartPlugPort.toString(), s.smartPlugRelayDp.toString(), key).joinToString("|")
 
  fun close() {
  controller?.close()

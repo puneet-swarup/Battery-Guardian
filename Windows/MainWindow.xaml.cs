@@ -67,9 +67,8 @@ namespace BatteryGuardian
         private bool _updateCheckInProgress;
  private const int RefreshIntervalSeconds = 30;
 
- // The band each pair of levels was in last time, so a change can be detected.
- private BatteryBand _alertBand = BatteryBand.Unknown;
- private BatteryBand _plugBand = BatteryBand.Unknown;
+ // The band the levels were in last time. One pair, so one band.
+ private BatteryBand _band = BatteryBand.Unknown;
  private bool _plugFailureNotified;
  private int _plugRestoreAttempts;
  private const int MaxPlugRestoreAttempts = 6;
@@ -865,20 +864,17 @@ namespace BatteryGuardian
 
                 // One reading, classified once per pair of levels. The alerts
                 // and the plug no longer compare percentages themselves.
-                ThresholdSignal alertSignal = ThresholdMonitor.Evaluate(
+                // One pair of levels for everything. The alerts and the plug used
+                // to hold their own, which is how a reading could alert at 95 and
+                // leave the charger running.
+                ThresholdSignal signal = ThresholdMonitor.Evaluate(
                     status.BatteryLifePercent, true,
                     new ThresholdPair(_settings.HighBatteryThreshold, _settings.LowBatteryThreshold),
-                    _alertBand);
-                _alertBand = alertSignal.Band;
+                    _band);
+                _band = signal.Band;
 
-                ThresholdSignal plugSignal = ThresholdMonitor.Evaluate(
-                    status.BatteryLifePercent, true,
-                    new ThresholdPair(_settings.SmartPlugHighThreshold, _settings.SmartPlugLowThreshold),
-                    _plugBand);
-                _plugBand = plugSignal.Band;
-
-                EvaluateAlerts(status.BatteryLifePercent, alertSignal.Band, isOnAcPower);
-                _ = EvaluateSmartPlugAsync(plugSignal.Band);
+                EvaluateAlerts(status.BatteryLifePercent, signal.Band, isOnAcPower);
+                _ = EvaluateSmartPlugAsync(signal.Band);
             }
             else
             {
@@ -1361,7 +1357,9 @@ namespace BatteryGuardian
  if (!_settings.SmartPlugEnabled) { _smartPlugController?.Dispose(); _smartPlugController = null; return null; }
  var localKey = _smartPlugCredStore.Load();
  if (localKey == null) return null;
- var config = new SmartPlugConfig(true, _settings.SmartPlugHighThreshold, _settings.SmartPlugLowThreshold, _settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, _settings.SmartPlugRelayDp, 3);
+ // The levels are not part of the plug's configuration any more: the band
+ // arrives already classified, from the same pair the alerts use.
+ var config = new SmartPlugConfig(true, _settings.HighBatteryThreshold, _settings.LowBatteryThreshold, _settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, _settings.SmartPlugRelayDp, 3);
  if (config.ValidationError() != null) return null;
  if (_smartPlugController == null)
  {

@@ -38,8 +38,8 @@ data class Settings(
 
  // ---- Smart plug (Tuya) ----
  val smartPlugEnabled: Boolean = false,
- val smartPlugHighThreshold: Int = 95,
- val smartPlugLowThreshold: Int = 15,
+ // The plug follows the same High/Low levels as the alerts. It used to have its
+ // own pair, which let the app alert at one level and switch at another.
  val smartPlugDeviceId: String = "",
  val smartPlugHost: String = "",
  val smartPlugPort: Int = 6668,

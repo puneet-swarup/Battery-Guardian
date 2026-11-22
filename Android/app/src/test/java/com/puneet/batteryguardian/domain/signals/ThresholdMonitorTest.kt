@@ -132,6 +132,72 @@ class ThresholdMonitorTest {
         assertFalse(signal.changed)
     }
 
+    // ---- hysteresis: leaving a band needs the margin -------------------
+
+    @Test
+    fun aHighBandHoldsUntilTheBatteryFallsPastTheMargin() {
+        val rows = listOf(
+            95 to BatteryBand.HIGH,      // at the level
+            94 to BatteryBand.HIGH,      // one below, still high
+            92 to BatteryBand.HIGH,      // margin edge, still high
+            91 to BatteryBand.IN_BAND    // past the margin
+        )
+        for ((percent, expected) in rows) {
+            val signal = ThresholdMonitor.evaluate(percent, true, pair, BatteryBand.HIGH)
+            assertEquals("at $percent percent", expected, signal.band)
+        }
+    }
+
+    @Test
+    fun aLowBandHoldsUntilTheBatteryRisesPastTheMargin() {
+        val rows = listOf(
+            15 to BatteryBand.LOW,
+            16 to BatteryBand.LOW,
+            18 to BatteryBand.LOW,
+            19 to BatteryBand.IN_BAND
+        )
+        for ((percent, expected) in rows) {
+            val signal = ThresholdMonitor.evaluate(percent, true, pair, BatteryBand.LOW)
+            assertEquals("at $percent percent", expected, signal.band)
+        }
+    }
+
+    @Test
+    fun wobblingAcrossTheLevelDoesNotChangeTheBand() {
+        // The case users reported: 95 fires, 94 must not re-arm, 96 must not
+        // fire again. With the margin the band never leaves HIGH.
+        var band = ThresholdMonitor.evaluate(95, true, pair, BatteryBand.UNKNOWN).band
+        assertEquals(BatteryBand.HIGH, band)
+
+        for (percent in listOf(94, 96, 95, 93)) {
+            val signal = ThresholdMonitor.evaluate(percent, true, pair, band)
+            assertEquals("at $percent percent", BatteryBand.HIGH, signal.band)
+            assertFalse("a reading of $percent should not be a change", signal.changed)
+            band = signal.band
+        }
+    }
+
+    @Test
+    fun anUnusableReadingDoesNotClearTheBand() {
+        val signal = ThresholdMonitor.evaluate(-1, true, pair, BatteryBand.HIGH)
+        assertEquals(BatteryBand.HIGH, signal.band)
+        assertFalse(signal.changed)
+    }
+
+    @Test
+    fun anInvalidPairStillClearsTheBand() {
+        val signal = ThresholdMonitor.evaluate(50, true, ThresholdPair(50, 50), BatteryBand.HIGH)
+        assertEquals(BatteryBand.UNKNOWN, signal.band)
+    }
+
+    @Test
+    fun theMarginHasItsOwnRules() {
+        assertTrue(ThresholdPair(95, 15, 3).validationError() == null)
+        assertTrue(ThresholdPair(95, 15, 0).validationError() == null)
+        assertTrue(ThresholdPair(95, 15, -1).validationError() != null)
+        assertTrue(ThresholdPair(95, 15, 40).validationError() != null)
+    }
+
     // ---- the pair's own rules ------------------------------------------
 
     @Test

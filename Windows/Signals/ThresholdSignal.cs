@@ -18,9 +18,16 @@ namespace BatteryGuardian.Signals
     /// A pair of levels, with the rule that they must be usable together.
     /// Alerts and the smart plug each hold their own pair.
     /// </summary>
-    public sealed record ThresholdPair(int High, int Low)
+    public sealed record ThresholdPair(int High, int Low, int Margin = ThresholdPair.DefaultMargin)
     {
         public const int MinimumGap = 5;
+
+        /// <summary>
+        /// How far the battery must move back past a level before the band
+        /// changes again. Without it a reading that wobbles across the level -
+        /// 95, 94, 96 - re-fires the alert each time, and makes the relay click.
+        /// </summary>
+        public const int DefaultMargin = 3;
 
         public static ThresholdPair Default => new(95, 15);
 
@@ -30,6 +37,8 @@ namespace BatteryGuardian.Signals
             if (Low < 0 || High > 100) return "Thresholds must be within 0-100.";
             if (Low >= High) return "Low threshold must be below high threshold.";
             if (High - Low < MinimumGap) return $"Thresholds must be at least {MinimumGap} points apart.";
+            if (Margin < 0) return "The margin cannot be negative.";
+            if (Margin * 2 >= High - Low) return "The margin is too large for these levels.";
             return null;
         }
     }
@@ -74,12 +83,32 @@ namespace BatteryGuardian.Signals
         {
             if (pair == null) return ThresholdSignal.Unknown(previous);
             if (pair.ValidationError() != null) return ThresholdSignal.Unknown(previous);
-            if (!readingUsable || batteryPercent < 0 || batteryPercent > 100) return ThresholdSignal.Unknown(previous);
 
-            BatteryBand band =
-                batteryPercent >= pair.High ? BatteryBand.High :
-                batteryPercent <= pair.Low ? BatteryBand.Low :
-                BatteryBand.InBand;
+            // An unusable reading says nothing about the battery, so it must not
+            // clear a band. Reporting Unknown here used to drop an active alert,
+            // which then re-fired on the next good reading - the double
+            // notification users saw.
+            if (!readingUsable || batteryPercent < 0 || batteryPercent > 100)
+                return new ThresholdSignal(previous, previous, false);
+
+            // Hysteresis: entering a band needs the level, leaving it needs the
+            // level plus the margin. A reading that wobbles across the level
+            // stays where it is instead of re-firing the alert or the relay.
+            BatteryBand band;
+            switch (previous)
+            {
+                case BatteryBand.High:
+                    band = batteryPercent >= pair.High - pair.Margin ? BatteryBand.High : BatteryBand.InBand;
+                    break;
+                case BatteryBand.Low:
+                    band = batteryPercent <= pair.Low + pair.Margin ? BatteryBand.Low : BatteryBand.InBand;
+                    break;
+                default:
+                    band = batteryPercent >= pair.High ? BatteryBand.High :
+                           batteryPercent <= pair.Low ? BatteryBand.Low :
+                           BatteryBand.InBand;
+                    break;
+            }
 
             return new ThresholdSignal(band, previous, band != previous);
         }

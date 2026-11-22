@@ -37,8 +37,6 @@ class SettingsRepository(context: Context) {
         respectDoNotDisturb = prefs.getBoolean(KEY_RESPECT_DND, true),
         chargeLimitNudgeShown = prefs.getBoolean(KEY_CHARGE_NUDGE, false),
  smartPlugEnabled = prefs.getBoolean(KEY_SP_ENABLED, false),
- smartPlugHighThreshold = prefs.getInt(KEY_SP_HIGH, 95),
- smartPlugLowThreshold = prefs.getInt(KEY_SP_LOW, 15),
  smartPlugDeviceId = prefs.getString(KEY_SP_DEVICE_ID, "") ?: "",
  smartPlugHost = prefs.getString(KEY_SP_HOST, "") ?: "",
  smartPlugPort = prefs.getInt(KEY_SP_PORT, 6668),
@@ -69,8 +67,6 @@ class SettingsRepository(context: Context) {
             putBoolean(KEY_RESPECT_DND, settings.respectDoNotDisturb)
             putBoolean(KEY_CHARGE_NUDGE, settings.chargeLimitNudgeShown)
  putBoolean(KEY_SP_ENABLED, settings.smartPlugEnabled)
- putInt(KEY_SP_HIGH, settings.smartPlugHighThreshold)
- putInt(KEY_SP_LOW, settings.smartPlugLowThreshold)
  putString(KEY_SP_DEVICE_ID, settings.smartPlugDeviceId)
  putString(KEY_SP_HOST, settings.smartPlugHost)
  putInt(KEY_SP_PORT, settings.smartPlugPort)
@@ -121,8 +117,6 @@ class SettingsRepository(context: Context) {
         private const val KEY_RESPECT_DND = "respect_dnd"
         private const val KEY_CHARGE_NUDGE = "charge_nudge_shown"
  private const val KEY_SP_ENABLED = "sp_enabled"
- private const val KEY_SP_HIGH = "sp_high"
- private const val KEY_SP_LOW = "sp_low"
  private const val KEY_SP_DEVICE_ID = "sp_device_id"
  private const val KEY_SP_HOST = "sp_host"
  private const val KEY_SP_PORT = "sp_port"

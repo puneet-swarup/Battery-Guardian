@@ -28,8 +28,8 @@ namespace BatteryGuardian
 
  // ---- Smart plug (Tuya) ----
  public bool SmartPlugEnabled { get; set; } = false;
- public int SmartPlugHighThreshold { get; set; } = 95;
- public int SmartPlugLowThreshold { get; set; } = 15;
+ // The plug uses the same High/Low levels as the alerts. It had its own pair,
+ // which let the app alert at one level and switch at another.
  public string SmartPlugDeviceId { get; set; } = string.Empty;
  public string SmartPlugHost { get; set; } = string.Empty;
  public int SmartPlugPort { get; set; } = 6668;

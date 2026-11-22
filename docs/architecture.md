@@ -42,9 +42,17 @@ idempotent; the alerts remain edge-driven.
 
 ## Patterns, and why each one is there
 
-**Strategy - `ThresholdPair`.** Alerts and the plug keep separate levels (a
-deliberate product decision: changing when you are *told* must not change when
-the app *acts*). One mechanism, two configurations.
+**Strategy - `ThresholdPair`.** One pair of levels drives everything. The alerts
+and the plug once held their own, which allowed a reading to alert at 95 and
+leave the charger running at 97 - the failure users reported. One pair, one
+band, no possibility of disagreement.
+
+**Hysteresis lives in the monitor.** Entering a band needs the level; leaving it
+needs the level plus a margin (three points by default). A reading that wobbles
+across the level - 95, 94, 96 - stays in the band instead of re-firing the alert
+and clicking the relay. An *unusable* reading keeps the previous band rather
+than clearing it: reporting `Unknown` there used to drop an active alert, which
+then fired again on the next good reading.
 
 **Observer / publish-subscribe - the consumers.** The reading is classified once
 and handed to every consumer. Consumers do not know about each other, and adding

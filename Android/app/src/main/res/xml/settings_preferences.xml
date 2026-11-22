@@ -164,20 +164,12 @@
   app:key="sp_dp"
   app:title="Relay datapoint"
   app:defaultValue="1" />
- <com.puneet.batteryguardian.ui.pref.SliderInputPreference
-  app:key="sp_high"
-  app:title="Switch OFF at"
-  app:defaultValue="95"
-  app:sliderMin="50"
-  app:sliderMax="100"
-  app:sliderSuffix="%" />
- <com.puneet.batteryguardian.ui.pref.SliderInputPreference
-  app:key="sp_low"
-  app:title="Switch ON at"
-  app:defaultValue="15"
-  app:sliderMin="5"
-  app:sliderMax="50"
-  app:sliderSuffix="%" />
+ <Preference
+  app:key="sp_levels_note"
+  app:persistent="false"
+  app:selectable="false"
+  app:summary="The plug follows the High and Low levels at the top of this screen."
+  app:title="Switch levels" />
  </PreferenceCategory>
 
 </PreferenceScreen>

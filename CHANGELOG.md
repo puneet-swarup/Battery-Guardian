@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.11] - 2026-11-22
+
+### Changed
+- **One set of levels for the alerts and the plug.** They had their own pairs, so a reading could alert at 95 and leave the charger running: two pairs meant two opinions about the same battery. The plug now follows the High and Low levels set in Settings, and its own pair is gone from both platforms.
+- **The levels have hysteresis.** Entering a band needs the level; leaving it needs the level plus three points. A reading that wobbles across 95 - 95, 94, 96 - used to clear the alert and re-fire it, which is the pair of notifications users reported seeing one after the other. It now stays in the band, and the relay does not click either.
+- **An unusable reading no longer clears the band.** Reporting "unknown" for one reading dropped an active alert, which then fired again on the next good one - the same double notification by another route. An unknown reading now leaves the band where it was; only a genuinely broken configuration clears it.
+
 ## [2.5.10] - 2026-11-22
 
 ### Changed

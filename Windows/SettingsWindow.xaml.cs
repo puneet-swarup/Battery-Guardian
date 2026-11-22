@@ -50,8 +50,7 @@ namespace BatteryGuardian
             PlugHostBox.Text = Settings.SmartPlugHost;
             PlugPortBox.Text = Settings.SmartPlugPort.ToString();
             PlugRelayDpBox.Text = Settings.SmartPlugRelayDp.ToString();
-            PlugHighBox.Text = Settings.SmartPlugHighThreshold.ToString();
-            PlugLowBox.Text = Settings.SmartPlugLowThreshold.ToString();
+
 
             try
             {
@@ -135,8 +134,7 @@ namespace BatteryGuardian
             Settings.SmartPlugHost = plug.Host;
             Settings.SmartPlugPort = plug.Port;
             Settings.SmartPlugRelayDp = plug.RelayDp;
-            Settings.SmartPlugHighThreshold = plug.High;
-            Settings.SmartPlugLowThreshold = plug.Low;
+
 
             if (plug.Key != null)
             {

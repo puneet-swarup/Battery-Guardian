@@ -131,10 +131,73 @@ namespace BatteryGuardian.Tests
             Assert.False(signal.Changed);
         }
 
+        // ---- hysteresis: leaving a band needs the margin -------------------
+
+        [Theory]
+        [InlineData(95, BatteryBand.High)]   // at the level
+        [InlineData(94, BatteryBand.High)]   // one below, still high
+        [InlineData(92, BatteryBand.High)]   // margin edge, still high
+        [InlineData(91, BatteryBand.InBand)] // past the margin, back in band
+        public void AHighBandHoldsUntilTheBatteryFallsPastTheMargin(int percent, BatteryBand expected)
+        {
+            var signal = ThresholdMonitor.Evaluate(percent, true, Pair, BatteryBand.High);
+            Assert.Equal(expected, signal.Band);
+        }
+
+        [Theory]
+        [InlineData(15, BatteryBand.Low)]
+        [InlineData(16, BatteryBand.Low)]
+        [InlineData(18, BatteryBand.Low)]
+        [InlineData(19, BatteryBand.InBand)]
+        public void ALowBandHoldsUntilTheBatteryRisesPastTheMargin(int percent, BatteryBand expected)
+        {
+            var signal = ThresholdMonitor.Evaluate(percent, true, Pair, BatteryBand.Low);
+            Assert.Equal(expected, signal.Band);
+        }
+
+        [Fact]
+        public void WobblingAcrossTheLevelDoesNotChangeTheBand()
+        {
+            // The case users reported: 95 fires, 94 must not re-arm, 96 must not
+            // fire again. With the margin, the band never leaves High.
+            BatteryBand band = ThresholdMonitor.Evaluate(95, true, Pair, BatteryBand.Unknown).Band;
+            Assert.Equal(BatteryBand.High, band);
+
+            foreach (int percent in new[] { 94, 96, 95, 93 })
+            {
+                var signal = ThresholdMonitor.Evaluate(percent, true, Pair, band);
+                Assert.Equal(BatteryBand.High, signal.Band);
+                Assert.False(signal.Changed, $"a reading of {percent} should not be a change");
+                band = signal.Band;
+            }
+        }
+
+        [Fact]
+        public void AnUnusableReadingDoesNotClearTheBand()
+        {
+            // Reporting Unknown here dropped an active alert, which then fired
+            // again on the next good reading - the double notification.
+            var signal = ThresholdMonitor.Evaluate(-1, true, Pair, BatteryBand.High);
+            Assert.Equal(BatteryBand.High, signal.Band);
+            Assert.False(signal.Changed);
+        }
+
+        [Fact]
+        public void AnInvalidPairStillClearsTheBand()
+        {
+            // A broken configuration is different from a missing reading: there is
+            // nothing to hold on to, so the band becomes Unknown.
+            var signal = ThresholdMonitor.Evaluate(50, true, new ThresholdPair(50, 50), BatteryBand.High);
+            Assert.Equal(BatteryBand.Unknown, signal.Band);
+        }
+
         // ---- the pair's own rules -----------------------------------------
 
         [Theory]
         [InlineData(95, 15, true)]
+        [InlineData(95, 15, false, 0)]      // no margin is allowed
+        [InlineData(95, 15, false, -1)]     // a negative margin is not
+        [InlineData(95, 90, false, 3)]      // margin does not fit the gap
         [InlineData(100, 0, true)]
         [InlineData(95, 90, true)]
         [InlineData(95, 91, false)]   // four points apart
@@ -145,6 +208,17 @@ namespace BatteryGuardian.Tests
         public void ThePairValidatesItself(int high, int low, bool valid)
         {
             var pair = new ThresholdPair(high, low);
+            Assert.Equal(valid, pair.ValidationError() == null);
+        }
+
+        [Theory]
+        [InlineData(3, true)]
+        [InlineData(0, true)]
+        [InlineData(-1, false)]
+        [InlineData(40, false)]   // too large for a 95/15 pair
+        public void TheMarginHasItsOwnRules(int margin, bool valid)
+        {
+            var pair = new ThresholdPair(95, 15, margin);
             Assert.Equal(valid, pair.ValidationError() == null);
         }
     }

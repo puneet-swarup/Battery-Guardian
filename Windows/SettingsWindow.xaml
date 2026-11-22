@@ -157,15 +157,9 @@
                     <TextBox x:Name="PlugRelayDpBox" Grid.Row="3" Grid.Column="1" Width="50"
                              HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
 
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Switch OFF at (%):"
-                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
-                    <TextBox x:Name="PlugHighBox" Grid.Row="4" Grid.Column="1" Width="50"
-                             HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
-
-                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Switch ON at (%):"
-                               VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>
-                    <TextBox x:Name="PlugLowBox" Grid.Row="5" Grid.Column="1" Width="50"
-                             HorizontalAlignment="Left" Margin="0,0,0,10" Padding="4"/>
+                    <TextBlock Grid.Row="4" Grid.ColumnSpan="2"
+                               Text="The plug follows the High and Low levels set at the top of this window."
+                               TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,10"/>
 
                     <TextBlock Grid.Row="6" Grid.Column="0" Text="Local key:"
                                VerticalAlignment="Center" Foreground="#333333" Margin="0,0,10,10"/>

@@ -81,6 +81,13 @@ Open Settings from the tray menu. Under Smart Plug set: enable control, device
 ID, device IP, Local Key (stored with DPAPI, CurrentUser scope), port (default
 6668), relay datapoint (default 1), switch OFF at (high), switch ON at (low).
 
+### One set of levels
+
+The plug uses the same High and Low levels as the alerts. It used to have its
+own pair, and that is what let the app announce 95% while leaving the charger
+running - two pairs meant two opinions. Set the levels once, under Settings,
+and both follow them.
+
 ### Sleep, lid close and shutdown
 
 Windows turns a closed lid into a sleep or a shutdown, whichever your power plan
