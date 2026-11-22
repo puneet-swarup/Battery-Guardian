@@ -127,16 +127,17 @@ class AlertEvaluatorTest {
     }
 
     @Test
-    fun `equal high and low thresholds do not both fire at the same percent`() {
-        // At exactly 50 with high == low == 50: plugged in -> high only.
+    fun `an unusable pair fires nothing`() {
+        // high == low cannot be configured - the settings screen rejects it - and
+        // the monitor reports the reading as unknown rather than guessing which
+        // alert should win. Silence is the safe answer for a broken configuration.
         val plugged = AlertEvaluator.evaluate(50, band(50, 50, 50), isOnAcPower = true)
-        assertTrue(plugged.highAlertShouldBeActive)
+        assertFalse(plugged.highAlertShouldBeActive)
         assertFalse(plugged.lowAlertShouldBeActive)
 
-        // On battery -> low only.
         val unplugged = AlertEvaluator.evaluate(50, band(50, 50, 50), isOnAcPower = false)
-        assertTrue(unplugged.lowAlertShouldBeActive)
         assertFalse(unplugged.highAlertShouldBeActive)
+        assertFalse(unplugged.lowAlertShouldBeActive)
     }
 
     @Test
