@@ -1242,9 +1242,24 @@ namespace BatteryGuardian
    }
 
    SmartPlugController? controller = _smartPlugController;
-   string remembered = controller == null
-    ? string.Empty
-    : SmartPlugSleepPolicy.Remember(controller.Status.Relay);
+   if (controller == null)
+   {
+    DiagnosticLog.WriteAlways("SLEEP: not cutting - no controller (plug not configured).");
+    return;
+   }
+
+   // Read the plug now instead of trusting the cached status, which can be
+   // hours old by the time the lid closes. If the read fails, fall back to the
+   // last thing this app told the plug to do - the intent - because that is
+   // still true even when the plug will not answer.
+   SmartPlugStatus fresh = controller.ReadStatusAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+   RelayState known = fresh.Connected ? fresh.Relay : controller.IntendedRelay;
+
+   DiagnosticLog.WriteAlways(
+    $"SLEEP: state read={(fresh.Connected ? fresh.Relay.ToString() : "failed: " + fresh.Message)} " +
+    $"intent={controller.IntendedRelay} using={known}");
+
+   string remembered = SmartPlugSleepPolicy.Remember(known);
 
    // Only cut the plug if there is something to put back. Cutting without a
    // record is a one-way door: between the thresholds the rules do nothing, so
@@ -1257,12 +1272,6 @@ namespace BatteryGuardian
 
    _settings.SmartPlugStateBeforeSleep = remembered;
    SaveSettings(_settings);
-
-   if (controller == null)
-   {
-    DiagnosticLog.WriteAlways("SLEEP: not cutting - no controller (plug not configured).");
-    return;
-   }
 
    SmartPlugStatus status = controller.ApplyNowAsync(false, TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
    DiagnosticLog.WriteAlways($"SLEEP: cut attempted, error={status.LastError} message='{status.Message}', remembered '{remembered}'.");

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.6] - 2026-11-22
+
+### Fixed (Windows)
+- **The sleep path decided from a cached state, which is why it looked stale.** The switching rules already read the plug on every battery change - that part was never stale. The sleep path was the exception: it read `Status.Relay`, the last known value, which can be hours old when the lid closes, and gave up when that value was Unknown. It now reads the plug at the moment of the decision, and falls back to the last instruction the app sent rather than to a stale observation. The controller also records that instruction separately, so "what we asked for" and "what the plug last said" are no longer the same field.
+
 ## [2.5.5] - 2026-11-22
 
 ### Added (Windows)

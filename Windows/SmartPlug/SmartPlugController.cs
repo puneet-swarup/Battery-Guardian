@@ -35,6 +35,14 @@ namespace BatteryGuardian.SmartPlug
  public SmartPlugStatus Status => _status;
 
  /// <summary>
+ /// The last relay state this app asked for, whether or not it was confirmed.
+ /// Distinct from <see cref="Status"/>'s Relay, which is what the plug last
+ /// reported. When the plug cannot be read, the intent is the only honest thing
+ /// left to restore.
+ /// </summary>
+ public RelayState IntendedRelay { get; private set; } = RelayState.Unknown;
+
+ /// <summary>
  /// Evaluates a battery reading and applies the appropriate command.
  /// Returns the resulting status. Never throws for network failures; failures
  /// are classified into <see cref="SmartPlugStatus.LastError"/>.
@@ -94,10 +102,12 @@ namespace BatteryGuardian.SmartPlug
    {
     case SmartPlugDecision.Action.TurnOff:
      await RunWithRetryAsync(() => _plug.TurnOffAsync(token), token).ConfigureAwait(false);
+     IntendedRelay = RelayState.Off;
      relay = RelayState.Off;
      break;
     case SmartPlugDecision.Action.TurnOn:
      await RunWithRetryAsync(() => _plug.TurnOnAsync(token), token).ConfigureAwait(false);
+     IntendedRelay = RelayState.On;
      relay = RelayState.On;
      break;
     case SmartPlugDecision.Action.None:
@@ -214,6 +224,8 @@ namespace BatteryGuardian.SmartPlug
   {
    if (on) await _plug.TurnOnAsync(cts.Token).ConfigureAwait(false);
    else await _plug.TurnOffAsync(cts.Token).ConfigureAwait(false);
+
+   IntendedRelay = on ? RelayState.On : RelayState.Off;
 
    _status = _status with
    {
