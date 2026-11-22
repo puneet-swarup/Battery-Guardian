@@ -57,12 +57,16 @@ namespace BatteryGuardian.Tests
   {
    using var controller = new SmartPlugController(new FlakyPlug(failuresBeforeSuccess: 2), Cfg, new[] { 0 });
 
-   SmartPlugStatus failed = await controller.EvaluateAsync(96);
-   Assert.Equal(SmartPlugError.Unreachable, failed.LastError);
+   // First reading: the plug cannot be read, so the state is unknown - but the
+   // command still goes out and the intent is recorded. That is the whole point
+   // of not letting a failed read stop the switch.
+   SmartPlugStatus first = await controller.EvaluateAsync(96);
+   Assert.Equal(RelayState.Off, controller.IntendedRelay);
 
-   SmartPlugStatus recovered = await controller.EvaluateAsync(96);
-   Assert.Equal(SmartPlugError.None, recovered.LastError);
-   Assert.Equal(RelayState.Off, recovered.Relay);
+   // Second reading: the plug answers again, and the observation is recorded.
+   SmartPlugStatus second = await controller.EvaluateAsync(96);
+   Assert.Equal(SmartPlugError.None, second.LastError);
+   Assert.NotEqual(RelayState.Unknown, second.Relay);
   }
 
   [Fact]
@@ -77,7 +81,8 @@ namespace BatteryGuardian.Tests
    SmartPlugStatus status = await controller.EvaluateAsync(10);
 
    Assert.True(plug.TurnedOn, "the plug was never told to switch on");
-   Assert.Equal(RelayState.On, status.Relay);
+   Assert.Equal(RelayState.On, controller.IntendedRelay);
+   Assert.Equal(RelayState.Unknown, status.Relay);
   }
 
   [Fact]
@@ -89,7 +94,11 @@ namespace BatteryGuardian.Tests
    SmartPlugStatus status = await controller.EvaluateAsync(96);
 
    Assert.True(plug.TurnedOff, "the plug was never told to switch off");
-   Assert.Equal(RelayState.Off, status.Relay);
+   Assert.Equal(RelayState.Off, controller.IntendedRelay);
+
+   // The command was sent but never confirmed, so it must not be recorded as an
+   // observation: Status.Relay stays Unknown until a read succeeds.
+   Assert.Equal(RelayState.Unknown, status.Relay);
   }
 
   [Fact]

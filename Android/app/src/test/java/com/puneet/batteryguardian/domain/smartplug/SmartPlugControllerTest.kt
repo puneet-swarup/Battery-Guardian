@@ -2,6 +2,7 @@ package com.puneet.batteryguardian.domain.smartplug
 
 import com.puneet.batteryguardian.data.tuya.RelayState
 import com.puneet.batteryguardian.data.tuya.SmartPlug
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CountDownLatch

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.9] - 2026-11-22
+
+### Fixed
+- **2.5.8 built, but three of its own tests failed and the Android suite did not compile.** The tests still asserted the old contract, where a command wrote its own value into the observed relay; the Kotlin test used `assertFalse` without importing it. Both caught by CI, both fixed here. No behaviour change from 2.5.8.
+
 ## [2.5.8] - 2026-11-22
 
 ### Changed (Windows)
