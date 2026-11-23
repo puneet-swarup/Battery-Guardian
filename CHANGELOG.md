@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.16] - 2026-11-23
+
+### Fixed (Windows)
+- **A dead connection was reused for ever.** The SDK raises `Disconnected` when its receive loop or heartbeat notices the socket is gone; nothing in the app subscribed to it, and the adapter only reconnects when `IsConnected` is false - which stays true while the socket object still exists. So a connection that died overnight, or while the machine was asleep, was reused indefinitely: every read and every command timed out, nothing reconnected, and no switch happened again until the app was restarted. The app now listens for the event, and any failed read or command drops the socket so the next attempt reconnects.
+- The connection is discarded on wake from sleep, because it certainly died there.
+
 ## [2.5.15] - 2026-11-23
 
 ### Fixed (Windows)

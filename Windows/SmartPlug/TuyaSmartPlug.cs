@@ -122,7 +122,21 @@ namespace BatteryGuardian.SmartPlug
             }
             catch (TuyaLan.TuyaTimeoutException ex)
             {
+                // A timeout means the socket is probably dead while the device
+                // still believes a session is open. Drop it, so the next attempt
+                // reconnects instead of writing into a socket nobody reads.
+                await DisposeDeviceAsync().ConfigureAwait(false);
                 throw new TimeoutException("The smart plug did not answer in time.", ex);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is not TuyaLan.TuyaException)
+            {
+                // Socket, IO: same reasoning.
+                await DisposeDeviceAsync().ConfigureAwait(false);
+                throw;
             }
             catch (TuyaLan.TuyaException ex)
             {
@@ -169,7 +183,26 @@ namespace BatteryGuardian.SmartPlug
                 _device = device;
             }
 
+            // The SDK raises this when the receive loop or the heartbeat notices
+            // the socket is gone. Nothing subscribed to it before, so a connection
+            // that died overnight was reused for ever: every read and every command
+            // timed out, nothing reconnected, and no switch ever happened again
+            // until the app was restarted. That is the shape of the failure the
+            // owner kept reporting.
+            device.Disconnected += OnDeviceDisconnected;
+
             return device;
+        }
+
+        private void OnDeviceDisconnected(object? sender, Exception ex)
+        {
+            DiagnosticLog.WriteAlways(
+                $"PLUG: connection lost - {ex.GetType().Name}: {ex.Message}. It will be re-opened on the next attempt.");
+
+            lock (_gate)
+            {
+                if (ReferenceEquals(_device, sender)) _device = null;
+            }
         }
 
         private async Task DisposeDeviceAsync()

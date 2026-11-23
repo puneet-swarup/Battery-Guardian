@@ -1182,7 +1182,15 @@ namespace BatteryGuardian
  {
   DiagnosticLog.WriteAlways($"SLEEP: PowerModeChanged {e.Mode}");
   if (e.Mode == PowerModes.Suspend) HandleGoingAway("suspend");
-  else if (e.Mode == PowerModes.Resume) _ = RestoreAfterSleepAsync();
+  else if (e.Mode == PowerModes.Resume)
+  {
+   // The connection certainly died while the machine was asleep, and the
+   // adapter has no way to know if the OS never told it. Start clean.
+   _smartPlugController?.Dispose();
+   _smartPlugController = null;
+
+   _ = RestoreAfterSleepAsync();
+  }
  }
 
  private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
