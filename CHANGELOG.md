@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.18] - 2026-11-23
+
+### Changed (Android)
+- **TuyaLan 2.1.1, vendored as `app/libs/tuya-lan-2.1.1.aar`.** The Kotlin SDK had the same connection-state defect the .NET one had: `isConnected` was `socket.isConnected && !socket.isClosed`, and Java's `isConnected` stays true after the peer closes. A cached device was reused for ever. The AAR is the artefact the SDK's own pipeline built for tag v2.1.1, downloaded from its release.
+- The Android adapter uses `ensureConnected()` instead of caching on `isConnected`, and the heartbeat is on: it is what notices a connection that dies between polls.
+
 ## [2.5.17] - 2026-11-23
 
 ### Changed (Windows)

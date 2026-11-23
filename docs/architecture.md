@@ -67,6 +67,25 @@ and `TextToSpeech`; the TuyaLan .NET package versus the vendored AAR.
 state and a network, so it has a controller: one gate, one retry policy, one
 place that records intent. There is a single way to change the relay.
 
+## Connection state belongs to the library
+
+A Tuya device accepts one session at a time, and a TCP connection can die
+without either end being told: a router idle timeout, Wi-Fi power save, a device
+reboot, or the host machine sleeping. The SDK owns that state, and 2.1.x makes it
+say so:
+
+- `IsConnected` / `isConnected` is authoritative. It turns false when the receive
+  loop or the heartbeat sees the socket go.
+- `EnsureConnectedAsync` / `ensureConnected` connects only if needed.
+- There is **no automatic reconnection**; the host decides when to retry.
+- `Disconnected` fires once per death.
+
+The bug this replaced: both SDKs reported "the socket object exists", which stayed
+true after the peer closed. A host that cached the device - the obvious reading of
+the documentation - reused a dead connection for ever. Every command timed out,
+nothing reconnected, and the device looked unreachable until the app restarted.
+Battery Guardian carried exactly that workaround in its adapter for two releases.
+
 ## Observation is not intent
 
 The plug distinguishes two facts that look alike:
