@@ -6,7 +6,7 @@ import android.content.Intent
 import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.SettingsRepository
 import com.puneet.batteryguardian.domain.smartplug.SmartPlugManager
-import com.puneet.batteryguardian.domain.tuya.RelayState
+import com.puneet.batteryguardian.data.tuya.RelayState
 import kotlin.concurrent.thread
 
 /**
