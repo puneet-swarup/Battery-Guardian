@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.17] - 2026-11-23
+
+### Changed (Windows)
+- **TuyaLan 2.1.0.** The library's `IsConnected` used to mean "the stream object exists", which stayed true after the socket died - so a host that cached the device, as this app did, reused a dead connection for ever. That was the root cause of the plug never switching after the connection dropped, and 2.5.16 worked around it in the app. 2.1.0 fixes it where it belongs: the property is authoritative, `ConnectAsync` recovers from a dead socket, and `EnsureConnectedAsync` exists so hosts do not have to cache and guess. The library's README now documents the contract - one session per device, `Disconnected` fires once per death, reconnection belongs to the host.
+
 ## [2.5.16] - 2026-11-23
 
 ### Fixed (Windows)

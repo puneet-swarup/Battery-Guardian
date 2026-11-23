@@ -149,7 +149,12 @@ namespace BatteryGuardian.SmartPlug
         private async Task<TuyaLocalDevice> EnsureConnectedAsync(CancellationToken ct)
         {
             TuyaLocalDevice? current = _device;
-            if (current is { IsConnected: true }) return current;
+
+            // 2.1.0's IsConnected is authoritative, and EnsureConnectedAsync
+            // reconnects over a dead socket. Before that, this method returned a
+            // cached device whose IsConnected stayed true after the socket died,
+            // so nothing ever reconnected.
+            if (current is not null && current.IsConnected) return current;
 
             await DisposeDeviceAsync().ConfigureAwait(false);
 
