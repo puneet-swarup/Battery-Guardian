@@ -1384,7 +1384,13 @@ namespace BatteryGuardian
  if (_smartPlugController == null)
  {
  var keyBytes = TuyaLocalKey.Parse(localKey);
- var plug = new TuyaSmartPlug(_settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, keyBytes, _settings.SmartPlugRelayDp);
+ var plug = new TuyaSmartPlug(
+  _settings.SmartPlugDeviceId,
+  _settings.SmartPlugHost,
+  _settings.SmartPlugPort,
+  keyBytes,
+  _settings.SmartPlugRelayDp,
+  protocolVersion: _settings.SmartPlugProtocolVersion);
  _smartPlugController = new SmartPlugController(plug, config);
  }
  return _smartPlugController;

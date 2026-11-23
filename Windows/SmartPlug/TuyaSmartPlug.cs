@@ -25,26 +25,43 @@ namespace BatteryGuardian.SmartPlug
     public sealed class TuyaSmartPlug : ISmartPlug
     {
         private readonly TuyaDeviceOptions _options;
+        private readonly TuyaProtocolVersion _preferredVersion;
         private readonly string _relayDp;
         private readonly object _gate = new();
 
         private TuyaLocalDevice? _device;
         private bool _disposed;
 
-        public TuyaSmartPlug(string deviceId, string host, int port, byte[] localKey, int relayDp, int timeoutMs = 5000)
+        public TuyaSmartPlug(
+            string deviceId,
+            string host,
+            int port,
+            byte[] localKey,
+            int relayDp,
+            int timeoutMs = 5000,
+            string protocolVersion = "3.5")
         {
             if (deviceId == null) throw new ArgumentNullException(nameof(deviceId));
             if (host == null) throw new ArgumentNullException(nameof(host));
             if (localKey == null) throw new ArgumentNullException(nameof(localKey));
 
             _relayDp = relayDp.ToString(CultureInfo.InvariantCulture);
+
+            // The version decides the frame layout - 3.4 and 3.5 do not share one -
+            // so guessing wrong means the plug never answers. The setting was
+            // ignored here for months and 3.5 was hardcoded; a 3.4 device failed
+            // every single time with "unreachable" and nothing said why.
+            _preferredVersion = TuyaProtocolVersionExtensions.ParseLabel(protocolVersion);
+            if (_preferredVersion == TuyaProtocolVersion.V33)
+                _preferredVersion = TuyaProtocolVersion.V35;   // ParseLabel falls back to 3.3 for junk
+
             _options = new TuyaDeviceOptions
             {
                 Host = host,
                 Port = port,
                 DeviceId = deviceId,
                 LocalKeyBytes = localKey,
-                Version = TuyaProtocolVersion.V35,
+                Version = _preferredVersion,
                 ConnectTimeout = TimeSpan.FromMilliseconds(timeoutMs),
                 CommandTimeout = TimeSpan.FromMilliseconds(timeoutMs),
                 // Keep the socket warm. Without the heartbeat an idle plug ends
@@ -115,6 +132,25 @@ namespace BatteryGuardian.SmartPlug
             }
         }
 
+        /// <summary>The configured version first, then the other one.</summary>
+        private TuyaProtocolVersion[] CandidateVersions() => _preferredVersion == TuyaProtocolVersion.V34
+            ? new[] { TuyaProtocolVersion.V34, TuyaProtocolVersion.V35 }
+            : new[] { TuyaProtocolVersion.V35, TuyaProtocolVersion.V34 };
+
+        /// <summary>A copy of the options for one attempt, with its own version.</summary>
+        private TuyaDeviceOptions BuildOptions(TuyaProtocolVersion version) => new()
+        {
+            Host = _options.Host,
+            Port = _options.Port,
+            DeviceId = _options.DeviceId,
+            LocalKeyBytes = _options.LocalKeyBytes,
+            Version = version,
+            DeviceType = _options.DeviceType,
+            ConnectTimeout = _options.ConnectTimeout,
+            CommandTimeout = _options.CommandTimeout,
+            EnableHeartbeat = _options.EnableHeartbeat
+        };
+
         private async Task<TuyaLocalDevice> EnsureConnectedAsync(CancellationToken ct)
         {
             TuyaLocalDevice? current = _device;
@@ -122,8 +158,39 @@ namespace BatteryGuardian.SmartPlug
 
             await DisposeDeviceAsync().ConfigureAwait(false);
 
-            var device = new TuyaLocalDevice(_options);
-            await device.ConnectAsync(ct).ConfigureAwait(false);
+            // Try the configured version, then the other one. A wrong guess is
+            // indistinguishable from an unreachable plug, so trying both turns a
+            // silent failure into one that either works or says why not.
+            Exception? lastError = null;
+            TuyaLocalDevice? device = null;
+
+            foreach (TuyaProtocolVersion version in CandidateVersions())
+            {
+                var attempt = BuildOptions(version);
+                var candidate = new TuyaLocalDevice(attempt);
+                try
+                {
+                    await candidate.ConnectAsync(ct).ConfigureAwait(false);
+                    device = candidate;
+                    DiagnosticLog.WriteAlways($"PLUG CONNECT: protocol {version} worked ({attempt.Host}:{attempt.Port})");
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    await candidate.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    DiagnosticLog.WriteAlways(
+                        $"PLUG CONNECT: protocol {version} failed - {ex.GetType().Name}: {ex.Message}");
+                    await candidate.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+
+            if (device == null)
+                throw lastError ?? new InvalidOperationException("The plug could not be reached on any protocol version.");
 
             lock (_gate)
             {

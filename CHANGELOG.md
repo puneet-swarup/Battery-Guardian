@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.14] - 2026-11-23
+
+### Fixed (Windows)
+- **The app spoke 3.5 to every plug, whatever the setting said.** `TuyaSmartPlug` hardcoded the protocol version and never read `SmartPlugProtocolVersion`. 3.4 and 3.5 do not share a frame layout, so a 3.4 device never answered a handshake - which looks exactly like an unreachable plug, and is indistinguishable from one in the log. The configured version is used now, and if it fails the other one is tried; both attempts are written to the log with the reason each failed. This is the first thing that would explain a plug that has never switched, on or off.
+
 ## [2.5.13] - 2026-11-22
 
 ### Added (Windows)
