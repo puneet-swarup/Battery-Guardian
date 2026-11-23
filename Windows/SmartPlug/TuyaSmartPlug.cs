@@ -26,6 +26,9 @@ namespace BatteryGuardian.SmartPlug
     {
         private readonly TuyaDeviceOptions _options;
         private readonly TuyaProtocolVersion _preferredVersion;
+
+        /// <summary>The version that last connected; tried first from then on.</summary>
+        private TuyaProtocolVersion _workingVersion;
         private readonly string _relayDp;
         private readonly object _gate = new();
 
@@ -54,6 +57,8 @@ namespace BatteryGuardian.SmartPlug
             _preferredVersion = TuyaProtocolVersionExtensions.ParseLabel(protocolVersion);
             if (_preferredVersion == TuyaProtocolVersion.V33)
                 _preferredVersion = TuyaProtocolVersion.V35;   // ParseLabel falls back to 3.3 for junk
+
+            _workingVersion = _preferredVersion;
 
             _options = new TuyaDeviceOptions
             {
@@ -158,25 +163,49 @@ namespace BatteryGuardian.SmartPlug
 
             await DisposeDeviceAsync().ConfigureAwait(false);
 
-            // One attempt, with the version the user configured. Guessing at the
-            // protocol was my idea and it was wrong: the owner knows what the
-            // device speaks, and a second attempt only doubles the time it takes
-            // to fail.
-            var device = new TuyaLocalDevice(_options);
+            // Try the version that last worked, then ladder down. Laddering is
+            // only correct when the device *answered* and did not understand us -
+            // a rejected handshake is the signature of a version mismatch. A
+            // timeout or a refused connection is a network problem, and stepping
+            // down would just triple the time it takes to report that.
+            Exception? lastError = null;
+            TuyaLocalDevice? device = null;
 
-            try
+            foreach (TuyaProtocolVersion version in VersionsToTry())
             {
-                await device.ConnectAsync(ct).ConfigureAwait(false);
-                DiagnosticLog.WriteAlways(
-                    $"PLUG CONNECT: {_preferredVersion} to {_options.Host}:{_options.Port} succeeded.");
+                var candidate = new TuyaLocalDevice(WithVersion(version));
+                try
+                {
+                    await candidate.ConnectAsync(ct).ConfigureAwait(false);
+                    device = candidate;
+                    _workingVersion = version;
+                    DiagnosticLog.WriteAlways(
+                        $"PLUG CONNECT: {version} to {_options.Host}:{_options.Port} succeeded.");
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    await candidate.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    bool answeredButRejected = ex is TuyaLan.TuyaHandshakeException or TuyaLan.TuyaCryptoException;
+
+                    DiagnosticLog.WriteAlways(
+                        $"PLUG CONNECT: {version} to {_options.Host}:{_options.Port} failed - " +
+                        $"{ex.GetType().Name}: {ex.Message}" +
+                        (answeredButRejected ? " (device answered and rejected the handshake)" : " (network)"));
+
+                    await candidate.DisposeAsync().ConfigureAwait(false);
+
+                    if (!answeredButRejected) throw;   // not a version problem
+                }
             }
-            catch (Exception ex)
-            {
-                DiagnosticLog.WriteAlways(
-                    $"PLUG CONNECT: {_preferredVersion} to {_options.Host}:{_options.Port} failed - " +
-                    $"{ex.GetType().Name}: {ex.Message}");
-                throw;
-            }
+
+            if (device == null)
+                throw lastError ?? new InvalidOperationException("The plug could not be reached.");
 
             lock (_gate)
             {
@@ -198,6 +227,30 @@ namespace BatteryGuardian.SmartPlug
 
             return device;
         }
+
+        /// <summary>
+        /// The last working version first, then downwards: 3.5, 3.4, 3.3.
+        /// </summary>
+        private TuyaProtocolVersion[] VersionsToTry() => _workingVersion switch
+        {
+            TuyaProtocolVersion.V33 => new[] { TuyaProtocolVersion.V33 },
+            TuyaProtocolVersion.V34 => new[] { TuyaProtocolVersion.V34, TuyaProtocolVersion.V33 },
+            _ => new[] { TuyaProtocolVersion.V35, TuyaProtocolVersion.V34, TuyaProtocolVersion.V33 },
+        };
+
+        /// <summary>A copy of the options for one attempt, with its own version.</summary>
+        private TuyaDeviceOptions WithVersion(TuyaProtocolVersion version) => new()
+        {
+            Host = _options.Host,
+            Port = _options.Port,
+            DeviceId = _options.DeviceId,
+            LocalKeyBytes = _options.LocalKeyBytes,
+            Version = version,
+            DeviceType = _options.DeviceType,
+            ConnectTimeout = _options.ConnectTimeout,
+            CommandTimeout = _options.CommandTimeout,
+            EnableHeartbeat = _options.EnableHeartbeat,
+        };
 
         private void OnDeviceDisconnected(object? sender, Exception ex)
         {

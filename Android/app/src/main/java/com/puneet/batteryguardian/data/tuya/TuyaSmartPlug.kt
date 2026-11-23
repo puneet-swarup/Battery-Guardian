@@ -1,5 +1,8 @@
 package com.puneet.batteryguardian.data.tuya
 
+import com.puneet.batteryguardian.data.DiagnosticLog
+import com.tuyalan.TuyaCryptoException
+import com.tuyalan.TuyaHandshakeException
 import com.tuyalan.devices.TuyaDeviceOptions
 import com.tuyalan.devices.TuyaLocalDevice
 import com.tuyalan.protocol.TuyaProtocolVersion
@@ -28,6 +31,7 @@ class TuyaSmartPlug(
     relayDp: Int,
     version: TuyaProtocolVersion = TuyaProtocolVersion.V35,
     private val timeoutMs: Int = 5000,
+    private val log: DiagnosticLog? = null,
 ) : SmartPlug {
 
     private val relayDpId = relayDp.toString()
@@ -42,22 +46,68 @@ class TuyaSmartPlug(
         port = port,
         connectTimeoutMillis = timeoutMs,
         commandTimeoutMillis = timeoutMs.toLong(),
-        // The plug is polled on a timer; its heartbeat is redundant here.
-        enableHeartbeat = false,
+        // The heartbeat is what notices a connection that dies between polls.
+        // Without it a socket that goes quiet is only discovered when a command
+        // fails - which is exactly the failure this was.
+        enableHeartbeat = true,
     )
 
     private var device: TuyaLocalDevice? = null
 
+    /** The version that last connected; tried first from then on. */
+    @Volatile
+    private var workingVersion: TuyaProtocolVersion = version
+
     private suspend fun connected(): TuyaLocalDevice {
+        // ensureConnected() reconnects over a socket that died quietly. Before
+        // 2.1.1 isConnected stayed true after the peer closed, so a cached device
+        // was reused for ever and every command timed out.
         val current = device
-        if (current != null && current.isConnected) return current
+        if (current != null) {
+            current.ensureConnected()
+            return current
+        }
 
         closeDevice()
+        device = connectLaddered()
+        return device!!
+    }
 
-        val fresh = TuyaLocalDevice(options)
-        fresh.connect()
-        device = fresh
-        return fresh
+    /**
+     * Tries the last working version, then downwards: 3.5, 3.4, 3.3.
+     *
+     * Laddering is only correct when the device *answered* and rejected the
+     * handshake - that is what a version mismatch looks like. A timeout is a
+     * network problem and is reported at once instead of tripling the wait.
+     */
+    private suspend fun connectLaddered(): TuyaLocalDevice {
+        val candidates = when (workingVersion) {
+            TuyaProtocolVersion.V33 -> listOf(TuyaProtocolVersion.V33)
+            TuyaProtocolVersion.V34 -> listOf(TuyaProtocolVersion.V34, TuyaProtocolVersion.V33)
+            else -> listOf(TuyaProtocolVersion.V35, TuyaProtocolVersion.V34, TuyaProtocolVersion.V33)
+        }
+
+        var last: Throwable? = null
+        for (candidate in candidates) {
+            val attempt = TuyaLocalDevice(options.copy(version = candidate))
+            try {
+                attempt.connect()
+                workingVersion = candidate
+                log?.writeAlways("PLUG CONNECT: $candidate to $host:$port succeeded")
+                return attempt
+            } catch (t: Throwable) {
+                last = t
+                val answeredButRejected = t is TuyaHandshakeException || t is TuyaCryptoException
+                log?.writeAlways(
+                    "PLUG CONNECT: $candidate to $host:$port failed - " +
+                        "${t.javaClass.simpleName}: ${t.message}" +
+                        if (answeredButRejected) " (device answered and rejected the handshake)" else " (network)"
+                )
+                runCatching { attempt.disconnect() }
+                if (!answeredButRejected) throw t
+            }
+        }
+        throw last ?: IllegalStateException("The plug could not be reached.")
     }
 
     @Synchronized

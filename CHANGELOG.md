@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.19] - 2026-11-23
+
+### Added
+- **The protocol version ladders down, on both platforms.** The app tried the configured version once; a 3.3 or 3.4 device simply never connected. It now tries 3.5, then 3.4, then 3.3 - but **only when the device answered and rejected the handshake**, which is what a version mismatch looks like. A timeout or a refused connection is a network problem and is reported straight away instead of tripling the wait. The version that works is remembered and tried first from then on, and every attempt is logged with its own error.
+- **Android cuts the plug when the phone is switched off**, and restores it on boot - the same contract as Windows. A phone that is off should not sit on a live charger at 100% all night. `ACTION_SHUTDOWN` gives the app a few seconds, so the command goes to a background thread and the remembered state is written first; if the phone dies before the command lands, the log says so.
+
+### Changed (Android)
+- **The settings screen is navigable instead of endless.** Each section - Alerts, Notifications, Quiet hours, History, Updates, Smart Plug - is now its own screen, reached from a short list. The preferences themselves are unchanged and every existing key still resolves.
+
 ## [2.5.18] - 2026-11-23
 
 ### Changed (Android)

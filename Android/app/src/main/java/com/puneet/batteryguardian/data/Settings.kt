@@ -18,6 +18,9 @@ data class Settings(
     val lastUpdateCheckUtc: Instant? = null,
     val diagnosticLoggingEnabled: Boolean = false,
     val snoozedUntilUtc: Instant? = null,
+
+    /** "On"/"Off" remembered when the phone is switched off; empty means unknown. */
+    val smartPlugStateBeforeShutdown: String = "",
     val monitoringEnabled: Boolean = false,
 
     // ---- Battery history (feature 1) ----

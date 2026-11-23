@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="@string/settings_alerts_category">
+    <PreferenceScreen app:title="@string/settings_alerts_category">
 
         <!-- Slider + typed numeric entry for precise threshold selection. -->
         <com.puneet.batteryguardian.ui.pref.SliderInputPreference
@@ -30,9 +30,9 @@
             app:defaultValue="300"
             app:dialogTitle="@string/settings_repeat_interval_title" />
 
-    </PreferenceCategory>
+    </PreferenceScreen>
 
-    <PreferenceCategory app:title="@string/settings_monitor_category">
+    <PreferenceScreen app:title="@string/settings_monitor_category">
 
         <SwitchPreferenceCompat
             app:key="play_sound"
@@ -58,9 +58,9 @@
             app:summary="@string/settings_vibrate_summary"
             app:defaultValue="true" />
 
-    </PreferenceCategory>
+    </PreferenceScreen>
 
-    <PreferenceCategory app:title="@string/settings_quiet_category">
+    <PreferenceScreen app:title="@string/settings_quiet_category">
 
         <SwitchPreferenceCompat
             app:key="quiet_hours_enabled"
@@ -86,9 +86,9 @@
             app:summary="@string/settings_respect_dnd_summary"
             app:defaultValue="true" />
 
-    </PreferenceCategory>
+    </PreferenceScreen>
 
-    <PreferenceCategory app:title="@string/settings_history_category">
+    <PreferenceScreen app:title="@string/settings_history_category">
 
         <SwitchPreferenceCompat
             app:key="history_enabled"
@@ -114,9 +114,9 @@
             app:sliderMax="100"
             app:sliderSuffix="%" />
 
-    </PreferenceCategory>
+    </PreferenceScreen>
 
-    <PreferenceCategory app:title="@string/settings_updates_category">
+    <PreferenceScreen app:title="@string/settings_updates_category">
 
         <SwitchPreferenceCompat
             app:key="auto_update"
@@ -135,9 +135,9 @@
             app:title="@string/settings_version_title"
             app:selectable="false" />
 
-    </PreferenceCategory>
+    </PreferenceScreen>
 
- <PreferenceCategory app:title="Smart Plug (Tuya)">
+ <PreferenceScreen app:title="Smart Plug (Tuya)">
  <SwitchPreferenceCompat
   app:key="sp_enabled"
   app:title="Enable smart-plug control"
@@ -168,8 +168,8 @@
   app:key="sp_levels_note"
   app:persistent="false"
   app:selectable="false"
-  app:summary="The plug follows the High and Low levels at the top of this screen."
+  app:summary="The plug follows the High and Low levels under Alerts."
   app:title="Switch levels" />
- </PreferenceCategory>
+ </PreferenceScreen>
 
 </PreferenceScreen>

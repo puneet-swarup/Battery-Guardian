@@ -75,6 +75,31 @@ class SmartPlugController(
   }
  }
 
+ /**
+  * Sends one command and returns, for the shutdown path where there is no
+  * reading to classify. Deliberately separate from [evaluate]: pretending the
+  * battery is full to force a switch off would put a lie in the log.
+  */
+ fun applyNow(on: Boolean): RelayState {
+  if (!config.enabled) return lastRelay
+  if (!lock.tryLock()) {
+   lastError = "Previous check still running; the shutdown command was skipped."
+   return lastRelay
+  }
+  try {
+   if (on) plug.turnOn() else plug.turnOff()
+   lastRelay = if (on) RelayState.ON else RelayState.OFF
+   lastError = null
+   lastSuccessEpochMs = System.currentTimeMillis()
+   return lastRelay
+  } catch (t: Throwable) {
+   lastError = t.message ?: t.javaClass.simpleName
+   return lastRelay
+  } finally {
+   lock.unlock()
+  }
+ }
+
  fun testConnection(): Boolean {
   lock.lock()
   try {

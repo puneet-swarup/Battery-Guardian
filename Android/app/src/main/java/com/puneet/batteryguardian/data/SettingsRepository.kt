@@ -27,6 +27,7 @@ class SettingsRepository(context: Context) {
         lastUpdateCheckUtc = readInstant(KEY_LAST_UPDATE),
         diagnosticLoggingEnabled = prefs.getBoolean(KEY_DIAG, false),
         snoozedUntilUtc = readInstant(KEY_SNOOZE_UNTIL),
+        smartPlugStateBeforeShutdown = prefs.getString(KEY_SP_BEFORE_SHUTDOWN, "") ?: "",
         monitoringEnabled = prefs.getBoolean(KEY_MONITORING, false),
         historyEnabled = prefs.getBoolean(KEY_HISTORY_ENABLED, true),
         idealZoneLowPercent = prefs.getInt(KEY_IDEAL_LOW, 20),
@@ -57,6 +58,7 @@ class SettingsRepository(context: Context) {
             putInstant(KEY_LAST_UPDATE, settings.lastUpdateCheckUtc)
             putBoolean(KEY_DIAG, settings.diagnosticLoggingEnabled)
             putInstant(KEY_SNOOZE_UNTIL, settings.snoozedUntilUtc)
+            putString(KEY_SP_BEFORE_SHUTDOWN, settings.smartPlugStateBeforeShutdown)
             putBoolean(KEY_MONITORING, settings.monitoringEnabled)
             putBoolean(KEY_HISTORY_ENABLED, settings.historyEnabled)
             putInt(KEY_IDEAL_LOW, settings.idealZoneLowPercent)
@@ -83,6 +85,10 @@ class SettingsRepository(context: Context) {
 
     fun setSnoozedUntil(until: Instant?) = update { it.copy(snoozedUntilUtc = until) }
 
+    /** Remembered when the phone shuts down: "On", "Off", or empty for unknown. */
+    fun setSmartPlugStateBeforeShutdown(state: String) =
+        update { it.copy(smartPlugStateBeforeShutdown = state) }
+
     fun setLastUpdateCheck(instant: Instant) = update { it.copy(lastUpdateCheckUtc = instant) }
 
     fun clearSnooze() = update { it.copy(snoozedUntilUtc = null) }
@@ -107,6 +113,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_LAST_UPDATE = "last_update_check"
         private const val KEY_DIAG = "diagnostic_logging"
         private const val KEY_SNOOZE_UNTIL = "snoozed_until"
+        private const val KEY_SP_BEFORE_SHUTDOWN = "sp_before_shutdown"
         private const val KEY_MONITORING = "monitoring_enabled"
         private const val KEY_HISTORY_ENABLED = "history_enabled"
         private const val KEY_IDEAL_LOW = "ideal_zone_low"

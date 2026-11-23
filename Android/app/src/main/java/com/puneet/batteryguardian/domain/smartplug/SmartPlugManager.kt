@@ -1,6 +1,7 @@
 package com.puneet.batteryguardian.domain.smartplug
 
 import android.content.Context
+import com.puneet.batteryguardian.data.DiagnosticLog
 import com.puneet.batteryguardian.data.Settings
 import com.puneet.batteryguardian.data.tuya.TuyaCredentialStore
 import com.puneet.batteryguardian.data.tuya.TuyaLocalKey
@@ -39,6 +40,7 @@ class SmartPlugManager(private val context: Context) {
  localKey = localKey,
  relayDp = settings.smartPlugRelayDp,
  version = protocolVersion(settings.smartPlugProtocolVersion),
+ log = DiagnosticLog.get(context),
  )
  controller = SmartPlugController(plug, config)
  signature = sig

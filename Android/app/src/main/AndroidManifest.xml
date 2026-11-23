@@ -82,6 +82,17 @@
             </intent-filter>
         </receiver>
 
+        <!-- Cut the plug when the phone is switched off, and remember its state. -->
+        <receiver
+            android:name=".service.ShutdownReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.QUICKBOOT_POWEROFF" />
+            </intent-filter>
+        </receiver>
+
         <!-- Restart the monitor after the device boots. -->
         <receiver
             android:name=".service.BootReceiver"

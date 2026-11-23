@@ -23,6 +23,21 @@ class DiagnosticLog private constructor(private val context: Context) {
     private val logFile: File
         get() = File(context.filesDir, "diagnostic.log")
 
+    /**
+     * Writes regardless of the enabled setting. Used by paths that are otherwise
+     * invisible - shutdown, sleep, a plug that never answers - so a failure can
+     * be diagnosed without asking the user to switch logging on and reproduce it.
+     */
+    fun writeAlways(message: String) {
+        try {
+            synchronized(lock) {
+                logFile.appendText("[${timeFormat.format(Date())}] $message\n")
+            }
+        } catch (t: Throwable) {
+            // logging must never take the app down
+        }
+    }
+
     fun write(message: String) {
         if (!enabled) return
         try {
