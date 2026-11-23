@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.15] - 2026-11-23
+
+### Fixed (Windows)
+- **The 3.4 fallback from 2.5.14 is gone.** The owner knows the device speaks 3.5; guessing at the protocol doubled the time to fail and was my idea, not a requirement. The configured version is used, and the attempt is logged with the address and the exact error.
+- **Every silent exit in the plug path now says why.** There were three ways for the plug to do nothing forever without a trace: no stored local key, a configuration the controller rejects, and a stored key that cannot be parsed (that one threw into a catch that only writes when logging is on). Each now writes a `PLUG:` line naming the cause.
+- **A switch that was needed and did not happen reaches the user.** The notice used to be limited to a snooze; it now fires whenever the band is High or Low and the plug did not answer, once per outage, and carries the reason. `SmartPlugFailurePolicy` and its tests are gone with the old rule.
+
 ## [2.5.14] - 2026-11-23
 
 ### Fixed (Windows)

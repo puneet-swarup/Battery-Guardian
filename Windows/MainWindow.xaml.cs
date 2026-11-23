@@ -1147,13 +1147,16 @@ namespace BatteryGuardian
 
    SmartPlugStatus status = await controller.EvaluateAsync(band);
 
-   // A snooze silences the reminders, not the protection. A command that did
-   // not reach the plug is therefore reported once, even mid-snooze.
-   if (SmartPlugFailurePolicy.ShouldNotify(status, IsSnoozed(), _plugFailureNotified))
+   // A switch that was needed and did not happen is reported once, whatever the
+   // snooze says: a snooze silences reminders, it does not mean "let the charger
+   // do whatever it likes".
+   bool switchWasNeeded = band == BatteryBand.High || band == BatteryBand.Low;
+
+   if (status.LastError != SmartPlugError.None && switchWasNeeded && !_plugFailureNotified)
    {
     _plugFailureNotified = true;
     ShowToastNotification("Battery Guardian",
-     "The smart plug did not respond, so the charger was not switched.");
+     $"The smart plug did not answer, so the charger was not switched. {status.Message}");
    }
    else if (status.LastError == SmartPlugError.None)
    {
@@ -1376,14 +1379,34 @@ namespace BatteryGuardian
  {
  if (!_settings.SmartPlugEnabled) { _smartPlugController?.Dispose(); _smartPlugController = null; return null; }
  var localKey = _smartPlugCredStore.Load();
- if (localKey == null) return null;
+ if (localKey == null)
+ {
+  DiagnosticLog.WriteAlways("PLUG: no local key stored - nothing can be sent. Re-enter it in Settings.");
+  return null;
+ }
  // The levels are not part of the plug's configuration any more: the band
  // arrives already classified, from the same pair the alerts use.
  var config = new SmartPlugConfig(true, _settings.HighBatteryThreshold, _settings.LowBatteryThreshold, _settings.SmartPlugDeviceId, _settings.SmartPlugHost, _settings.SmartPlugPort, _settings.SmartPlugRelayDp, 3);
- if (config.ValidationError() != null) return null;
+ string? configError = config.ValidationError();
+ if (configError != null)
+ {
+  DiagnosticLog.WriteAlways($"PLUG: configuration rejected - {configError}");
+  return null;
+ }
  if (_smartPlugController == null)
  {
- var keyBytes = TuyaLocalKey.Parse(localKey);
+ byte[] keyBytes;
+ try
+ {
+  keyBytes = TuyaLocalKey.Parse(localKey);
+ }
+ catch (ArgumentException ex)
+ {
+  // A stored key that cannot be parsed used to throw into a catch that only
+  // wrote when logging was on, so the plug simply never worked.
+  DiagnosticLog.WriteAlways($"PLUG: stored local key is unusable - {ex.Message}");
+  return null;
+ }
  var plug = new TuyaSmartPlug(
   _settings.SmartPlugDeviceId,
   _settings.SmartPlugHost,

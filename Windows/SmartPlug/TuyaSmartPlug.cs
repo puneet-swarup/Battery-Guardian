@@ -132,25 +132,6 @@ namespace BatteryGuardian.SmartPlug
             }
         }
 
-        /// <summary>The configured version first, then the other one.</summary>
-        private TuyaProtocolVersion[] CandidateVersions() => _preferredVersion == TuyaProtocolVersion.V34
-            ? new[] { TuyaProtocolVersion.V34, TuyaProtocolVersion.V35 }
-            : new[] { TuyaProtocolVersion.V35, TuyaProtocolVersion.V34 };
-
-        /// <summary>A copy of the options for one attempt, with its own version.</summary>
-        private TuyaDeviceOptions BuildOptions(TuyaProtocolVersion version) => new()
-        {
-            Host = _options.Host,
-            Port = _options.Port,
-            DeviceId = _options.DeviceId,
-            LocalKeyBytes = _options.LocalKeyBytes,
-            Version = version,
-            DeviceType = _options.DeviceType,
-            ConnectTimeout = _options.ConnectTimeout,
-            CommandTimeout = _options.CommandTimeout,
-            EnableHeartbeat = _options.EnableHeartbeat
-        };
-
         private async Task<TuyaLocalDevice> EnsureConnectedAsync(CancellationToken ct)
         {
             TuyaLocalDevice? current = _device;
@@ -158,39 +139,25 @@ namespace BatteryGuardian.SmartPlug
 
             await DisposeDeviceAsync().ConfigureAwait(false);
 
-            // Try the configured version, then the other one. A wrong guess is
-            // indistinguishable from an unreachable plug, so trying both turns a
-            // silent failure into one that either works or says why not.
-            Exception? lastError = null;
-            TuyaLocalDevice? device = null;
+            // One attempt, with the version the user configured. Guessing at the
+            // protocol was my idea and it was wrong: the owner knows what the
+            // device speaks, and a second attempt only doubles the time it takes
+            // to fail.
+            var device = new TuyaLocalDevice(_options);
 
-            foreach (TuyaProtocolVersion version in CandidateVersions())
+            try
             {
-                var attempt = BuildOptions(version);
-                var candidate = new TuyaLocalDevice(attempt);
-                try
-                {
-                    await candidate.ConnectAsync(ct).ConfigureAwait(false);
-                    device = candidate;
-                    DiagnosticLog.WriteAlways($"PLUG CONNECT: protocol {version} worked ({attempt.Host}:{attempt.Port})");
-                    break;
-                }
-                catch (OperationCanceledException)
-                {
-                    await candidate.DisposeAsync().ConfigureAwait(false);
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                    DiagnosticLog.WriteAlways(
-                        $"PLUG CONNECT: protocol {version} failed - {ex.GetType().Name}: {ex.Message}");
-                    await candidate.DisposeAsync().ConfigureAwait(false);
-                }
+                await device.ConnectAsync(ct).ConfigureAwait(false);
+                DiagnosticLog.WriteAlways(
+                    $"PLUG CONNECT: {_preferredVersion} to {_options.Host}:{_options.Port} succeeded.");
             }
-
-            if (device == null)
-                throw lastError ?? new InvalidOperationException("The plug could not be reached on any protocol version.");
+            catch (Exception ex)
+            {
+                DiagnosticLog.WriteAlways(
+                    $"PLUG CONNECT: {_preferredVersion} to {_options.Host}:{_options.Port} failed - " +
+                    $"{ex.GetType().Name}: {ex.Message}");
+                throw;
+            }
 
             lock (_gate)
             {
