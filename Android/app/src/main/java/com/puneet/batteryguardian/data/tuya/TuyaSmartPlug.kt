@@ -93,13 +93,13 @@ class TuyaSmartPlug(
             try {
                 attempt.connect()
                 workingVersion = candidate
-                log?.writeAlways("PLUG CONNECT: $candidate to $host:$port succeeded")
+                log?.writeAlways("PLUG CONNECT: $candidate to ${options.host}:${options.port} succeeded")
                 return attempt
             } catch (t: Throwable) {
                 last = t
                 val answeredButRejected = t is TuyaHandshakeException || t is TuyaCryptoException
                 log?.writeAlways(
-                    "PLUG CONNECT: $candidate to $host:$port failed - " +
+                    "PLUG CONNECT: $candidate to ${options.host}:${options.port} failed - " +
                         "${t.javaClass.simpleName}: ${t.message}" +
                         if (answeredButRejected) " (device answered and rejected the handshake)" else " (network)"
                 )
