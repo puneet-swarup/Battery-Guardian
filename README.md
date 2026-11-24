@@ -2,7 +2,7 @@
 [![Build and Publish EXE](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/build.yml/badge.svg)](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/build.yml)
 [![Build and Publish Android APK](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/android.yml/badge.svg)](https://github.com/puneet-swarup/Battery-Guardian/actions/workflows/android.yml)
 [![Latest Release](https://img.shields.io/github/v/release/puneet-swarup/Battery-Guardian?color=blue&label=release)](https://github.com/puneet-swarup/Battery-Guardian/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/puneet-swarup/Battery-Guardian/blob/main/LICENSE)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?logo=windows)](https://www.microsoft.com/windows)
 [![Platform: Android](https://img.shields.io/badge/Platform-Android%209%2B-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
@@ -256,3 +256,6 @@ These applications read battery data using standard platform APIs (Windows `GetS
 ## 🔐 Code Signing
 
 Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). See [Code Signing Policy](CODE_SIGNING_POLICY.md).
+## 📄 License
+
+Licensed under [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/). Commercial use requires a licence — write to puneetswarup@gmail.com.

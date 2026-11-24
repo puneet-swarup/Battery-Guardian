@@ -7,7 +7,7 @@ SignPath Foundation.
 
 - **Maintainer:** Puneet Swarup ([@puneet-swarup](https://github.com/puneet-swarup))
 - **Repository:** [Battery-Guardian](https://github.com/puneet-swarup/Battery-Guardian)
-- **License:** MIT
+- **License:** PolyForm Noncommercial 1.0.0
 
 ## Roles
 

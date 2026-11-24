@@ -17,7 +17,7 @@ namespace BatteryGuardian
             VersionText.Text = $"Version {GetVersionString()}";
             AuthorText.Text = "Made by Puneet Swarup";
             CopyrightText.Text = $"© {DateTime.Now.Year} Puneet Swarup";
-            LicenseText.Text = "Licensed under the MIT License";
+            LicenseText.Text = "Licensed under the PolyForm Noncommercial 1.0.0";
         }
 
         private static string GetVersionString()
