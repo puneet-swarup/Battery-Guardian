@@ -103,7 +103,7 @@ class TuyaSmartPlug(
                         "${t.javaClass.simpleName}: ${t.message}" +
                         if (answeredButRejected) " (device answered and rejected the handshake)" else " (network)"
                 )
-                runCatching { attempt.disconnect() }
+                runCatching { attempt.close() }
                 if (!answeredButRejected) throw t
             }
         }
