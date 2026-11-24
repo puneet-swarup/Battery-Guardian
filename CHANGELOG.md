@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.20] - 2026-11-24
+
+### Changed (Android)
+- **TuyaLan 3.0.0, vendored as `app/libs/tuya-lan-3.0.0.aar`.** The SDK's API is now Java-first: `TuyaDevice` is blocking with listener events, `TuyaDeviceAsync` carries the coroutines, and `TuyaDeviceOptionsBuilder` exists so Java does not need a Kotlin constructor. This app uses the coroutine side, so the only change here is the `*Async` names - `connectAsync`, `getStatusAsync`, `setDpAsync`, `ensureConnectedAsync`.
+- Sending a command on a device that was never connected now throws `TuyaException("not connected - call connect() first")` instead of a null pointer from inside the write path.
+
 ## [2.5.19] - 2026-11-23
 
 ### Added

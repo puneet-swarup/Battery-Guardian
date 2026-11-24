@@ -198,8 +198,8 @@ BatteryHealthInfo.cs, which is what makes them unit-testable.
 
 The Tuya protocol is not implemented here. `data/tuya/TuyaSmartPlug.kt` is an
 adapter over the [Tuya LAN SDK](https://github.com/puneet-swarup/tuya-lan-sdk),
-vendored as `app/libs/tuya-lan-2.1.1.aar` because the SDK is not on Maven yet.
-The file is the artefact the SDK's own release pipeline built for tag `v2.1.1`,
+vendored as `app/libs/tuya-lan-3.0.0.aar` because the SDK is not on Maven yet.
+The file is the artefact the SDK's own release pipeline built for tag `v3.0.0`,
 downloaded from its GitHub release - not a local build.
 It is a blocking adapter over the SDK's suspend API: the only caller is
 `BatteryMonitorService`, which runs it on a dedicated `smartplug-eval` thread.

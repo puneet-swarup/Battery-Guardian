@@ -143,7 +143,7 @@ dependencies {
     // is the only change needed once it is. Update with:
     //   curl -L -o app/libs/tuya-lan-<version>.aar \
     //     https://github.com/puneet-swarup/tuya-lan-sdk/releases/download/v<version>/tuya-lan-v<version>.aar
-    implementation(files("libs/tuya-lan-2.1.1.aar"))
+    implementation(files("libs/tuya-lan-3.0.0.aar"))
 
     // Unit testing
     testImplementation("junit:junit:4.13.2")

@@ -64,7 +64,7 @@ class TuyaSmartPlug(
         // was reused for ever and every command timed out.
         val current = device
         if (current != null) {
-            current.ensureConnected()
+            current.ensureConnectedAsync()
             return current
         }
 
@@ -91,7 +91,7 @@ class TuyaSmartPlug(
         for (candidate in candidates) {
             val attempt = TuyaLocalDevice(options.copy(version = candidate))
             try {
-                attempt.connect()
+                attempt.connectAsync()
                 workingVersion = candidate
                 log?.writeAlways("PLUG CONNECT: $candidate to ${options.host}:${options.port} succeeded")
                 return attempt
@@ -112,7 +112,7 @@ class TuyaSmartPlug(
 
     @Synchronized
     override fun getStatus(): RelayState = runBlocking {
-        mapRelay(connected().getStatus().getBool(relayDpId))
+        mapRelay(connected().getStatusAsync().getBool(relayDpId))
     }
 
     @Synchronized
@@ -122,7 +122,7 @@ class TuyaSmartPlug(
     override fun turnOff() = setRelay(false)
 
     private fun setRelay(on: Boolean) {
-        runBlocking { connected().setDp(relayDpId, on) }
+        runBlocking { connected().setDpAsync(relayDpId, on) }
     }
 
     override fun testConnection(): Boolean = try {
