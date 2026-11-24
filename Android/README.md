@@ -201,8 +201,11 @@ adapter over the [Tuya LAN SDK](https://github.com/puneet-swarup/tuya-lan-sdk),
 vendored as `app/libs/tuya-lan-3.0.0.aar` because the SDK is not on Maven yet.
 The file is the artefact the SDK's own release pipeline built for tag `v3.0.0`,
 downloaded from its GitHub release - not a local build.
-It is a blocking adapter over the SDK's suspend API: the only caller is
+It is a blocking adapter over the SDK's coroutine API (`TuyaDeviceAsync` -
+`connectAsync`, `getStatusAsync`, `setDpAsync`): the only caller is
 `BatteryMonitorService`, which runs it on a dedicated `smartplug-eval` thread.
+The SDK also exposes a blocking `TuyaDevice` for Java callers; this app is Kotlin
+and uses the coroutine side.
 
 To update the SDK, drop a new AAR in `app/libs/` and change the version in
 `app/build.gradle.kts`. Swapping `implementation(files(...))` for a Maven

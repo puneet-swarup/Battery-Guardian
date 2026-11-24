@@ -57,6 +57,22 @@ against real hardware and carries the parts that are easy to get wrong:
 translate the SDK's exceptions into the app's error categories
 (`SmartPlugError.Protocol`, `.Timeout`, `.Unreachable`).
 
+### The protocol version, and the ladder
+
+The version decides the frame layout: 3.3 and 3.4 use `0x000055AA`, 3.5 uses
+`0x00006699`. A device never answers a handshake in a language it does not speak,
+which looks exactly like an unreachable plug.
+
+So the adapters try **3.5, then 3.4, then 3.3** - but only when the device
+*answered and rejected the handshake*, which is what a version mismatch looks
+like. A timeout or a refused connection is a network problem and is reported at
+once instead of tripling the wait. The version that works is remembered and tried
+first from then on, and every attempt writes a `PLUG CONNECT:` line naming the
+version, the address and the error.
+
+There is deliberately no version picker in Settings: choosing a protocol revision
+is a developer's decision, not a user's.
+
 ### What this replaced
 
 Until 2.3.0 both apps carried their own copy of the protocol, written from a

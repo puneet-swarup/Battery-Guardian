@@ -102,7 +102,8 @@ from that confusion.
 
 | | Windows | Android |
 |---|---|---|
-| sleep / hibernate / shutdown | handled: the plug is cut, the state restored on return | not handled - a phone has no lid, and its suspend semantics are different |
+| sleep / hibernate | handled: the plug is cut on the way out, restored on wake | no equivalent - a phone has no lid |
+| shutdown | handled: the plug is cut, the state restored at next start | handled since 2.5.19: `ACTION_SHUTDOWN` cuts the plug and records the state, `BOOT_COMPLETED` puts it back |
 | charge limit | vendor WMI on Lenovo, Dell and ASUS | not available |
 
 Both are documented where they apply rather than pretended to be the same.
